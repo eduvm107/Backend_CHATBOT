@@ -1,0 +1,214 @@
+
+
+Ya tengo el proyecto ChatbotTCS.AdminAPI funcionando con FAQController completo.
+
+Ahora necesito crear los MODELOS, SERVICIOS y CONTROLADORES para TODAS las demás colecciones de mi base de datos MongoDB "ChatbotTCS".
+
+MI BASE DE DATOS TIENE ESTAS COLECCIONES (estructura real):
+
+1. ✅ faqs - YA ESTÁ HECHA
+
+2. mensajesAutomaticos - Estructura:
+{
+    "_id": ObjectId,
+  "titulo": string,
+  "contenido": string,
+  "tipo": string(bienvenida, recordatorio, motivacional, informativo, reenganche),
+  "diaGatillo": int(nullable),
+  "prioridad": string(alta, media, baja),
+  "canal": array de strings(chatbot, email),
+  "activo": bool,
+  "segmento": string(todos, inactivos),
+  "horaEnvio": string(formato "HH:mm"),
+  "condicion": string(nullable),
+  "fechaCreacion": ISODate,
+  "creadoPor": string
+}
+
+3.documentos - Estructura:
+{
+    "_id": ObjectId,
+  "titulo": string,
+  "descripcion": string,
+  "url": string,
+  "tipo": string(PDF, Formulario Web, Portal Web, Mapa Interactivo),
+  "categoria": string(Manuales, Políticas, Formularios, Beneficios, Facilidades, Desarrollo),
+  "subcategoria": string,
+  "tags": array de strings,
+  "icono": string(emoji),
+  "tamaño": string(nullable),
+  "idioma": string,
+  "version": string,
+  "publico": string(todos),
+  "obligatorio": bool,
+  "fechaPublicacion": ISODate,
+  "fechaActualizacion": ISODate,
+  "autor": string,
+  "descargas": int(opcional),
+  "accesos": int(opcional),
+  "valoracion": int
+}
+
+4.actividades - Estructura:
+{
+    "_id": ObjectId,
+  "titulo": string,
+  "descripcion": string,
+  "dia": int,
+  "duracionHoras": double,
+  "horaInicio": string(formato "HH:mm"),
+  "horaFin": string(formato "HH:mm"),
+  "lugar": string,
+  "modalidad": string(presencial, virtual, hibrido, flexible),
+  "tipo": string(induccion, logistica, capacitacion, reunion, evaluacion, taller, integracion),
+  "categoria": string,
+  "responsable": string,
+  "emailResponsable": string(nullable),
+  "capacidadMaxima": int,
+  "obligatorio": bool,
+  "materialesNecesarios": array de strings,
+  "materialesProporcionados": array de strings,
+  "preparacionPrevia": string(nullable),
+  "actividadesSiguientes": array de strings,
+  "estado": string(activo),
+  "fechaCreacion": ISODate
+}
+
+5.usuarios - Estructura:
+{
+    "_id": ObjectId,
+  "nombre": string,
+  "apellidos": string,
+  "nombreCompleto": string,
+  "email": string,
+  "telefono": string,
+  "dni": string,
+  "fechaNacimiento": ISODate,
+  "edad": int,
+  "genero": string,
+  "estadoCivil": string,
+  "direccion": {
+        "calle": string,
+    "distrito": string,
+    "ciudad": string,
+    "pais": string,
+    "codigoPostal": string
+  },
+  "area": string,
+  "departamento": string,
+  "puesto": string,
+  "nivel": string,
+  "tipoContrato": string,
+  "fechaIngreso": ISODate,
+  "diasDesdeIngreso": int,
+  "supervisor": {
+        "nombre": string,
+    "email": string,
+    "telefono": string,
+    "puesto": string
+  },
+  "estadoOnboarding": string,
+  "progresoOnboarding": int,
+  "actividadesCompletadas": array de strings,
+  "actividadesPendientes": array de strings,
+  "documentosEntregados": array de strings,
+  "documentosPendientes": array de strings,
+  "cursosAsignados": array de strings,
+  "cursosCompletados": array de strings,
+  "certificaciones": array de strings,
+  "favoritosChat": array de strings,
+  "preferencias": {
+        "notificaciones": bool,
+    "notificacionesEmail": bool,
+    "notificacionesPush": bool,
+    "idioma": string,
+    "temaOscuro": bool
+  },
+  "estadisticas": {
+        "mensajesEnviados": int,
+    "preguntasRealizadas": int,
+    "documentosDescargados": int,
+    "ultimaInteraccion": ISODate(nullable),
+    "satisfaccionPromedio": double(nullable)
+  },
+  "activo": bool,
+  "verificado": bool,
+  "primerLogin": ISODate(nullable),
+  "ultimoLogin": ISODate(nullable),
+  "fechaCreacion": ISODate,
+  "fechaActualizacion": ISODate,
+  "creadoPor": string
+}
+
+6.configuracion - Estructura:
+{
+    "_id": ObjectId,
+  "tipo": string(chatbot, notificaciones, seguridad, general),
+  "nombre": string,
+  "descripcion": string,
+  "configuracion": object(estructura dinámica dependiendo del tipo),
+  "activo": bool,
+  "fechaCreacion": ISODate,
+  "fechaActualizacion": ISODate,
+  "modificadoPor": string
+}
+
+7.conversaciones - Estructura:
+{
+    "_id": ObjectId,
+  "usuarioId": string,
+  "mensajes": array de {
+        "tipo": string(usuario, bot),
+    "contenido": string,
+    "timestamp": ISODate,
+    "faqRelacionada": string(nullable)
+  },
+  "fechaInicio": ISODate,
+  "fechaUltimaMensaje": ISODate,
+  "activa": bool,
+  "satisfaccion": int(nullable),
+  "resuelto": bool
+}
+
+NECESITO QUE CREES:
+
+Para CADA colección (menos faqs que ya existe):
+
+1.MODELO en Models/ (ejemplo: MensajeAutomatico.cs, Documento.cs, Actividad.cs, Usuario.cs, Configuracion.cs, Conversacion.cs)
+   -Usar atributos[BsonId], [BsonElement], [BsonRepresentation]
+   - Mapear EXACTAMENTE las estructuras de arriba
+   - Clases anidadas para objetos (direccion, supervisor, preferencias, estadisticas, mensajes)
+
+2. SERVICIO en Services/ (ejemplo: MensajeAutomaticoService.cs, DocumentoService.cs, etc.)
+   -Cada servicio debe tener métodos async:
+     *GetAllAsync()
+     * GetByIdAsync(string id)
+     * CreateAsync(Model entity)
+     * UpdateAsync(string id, Model entity)
+     * DeleteAsync(string id)
+     * Métodos de búsqueda específicos cuando tenga sentido
+
+3. CONTROLADOR en Controllers/ (ejemplo: MensajeAutomaticoController.cs, DocumentoController.cs, etc.)
+   -Route: [Route("api/[controller]")]
+   - Endpoints RESTful completos:
+     *GET / api /{ controller}
+*GET / api /{ controller}/{ id}
+*POST / api /{ controller}
+*PUT / api /{ controller}/{ id}
+*DELETE / api /{ controller}/{ id}
+-Manejo de errores con try-catch
+   - Respuestas HTTP apropiadas
+
+4. REGISTRAR EN PROGRAM.CS:
+   -Todos los servicios como Singleton
+   - Mantener la estructura CORS y Swagger existente
+
+REQUISITOS:
+-Seguir el mismo patrón que FAQController
+- Async/await en todos los métodos
+- Logging con ILogger
+- Validación de datos
+- Código limpio y comentado
+- Nombres de colecciones en minúsculas (mensajesAutomaticos, documentos, actividades, usuarios, configuracion, conversaciones)
+
+Por favor, genera TODOS los archivos necesarios para las 6 colecciones restantes.
