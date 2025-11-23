@@ -11,6 +11,7 @@ namespace ChatbotTCS.AdminAPI.Services
     public class MongoDBService
     {
         private readonly IMongoCollection<FAQ> _faqsCollection;
+        private readonly IMongoDatabase _database;
         private readonly ILogger<MongoDBService> _logger;
 
         /// <summary>
@@ -25,8 +26,8 @@ namespace ChatbotTCS.AdminAPI.Services
             try
             {
                 var mongoClient = new MongoClient(settings.Value.ConnectionString);
-                var database = mongoClient.GetDatabase(settings.Value.DatabaseName);
-                _faqsCollection = database.GetCollection<FAQ>("faqs");
+                _database = mongoClient.GetDatabase(settings.Value.DatabaseName);
+                _faqsCollection = _database.GetCollection<FAQ>("faqs");
 
                 _logger.LogInformation("Conexión a MongoDB establecida exitosamente");
             }
@@ -35,6 +36,17 @@ namespace ChatbotTCS.AdminAPI.Services
                 _logger.LogError(ex, "Error al conectar con MongoDB");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Obtiene una colección genérica de MongoDB
+        /// </summary>
+        /// <typeparam name="T">Tipo del documento</typeparam>
+        /// <param name="collectionName">Nombre de la colección</param>
+        /// <returns>Colección de MongoDB</returns>
+        public IMongoCollection<T> GetCollection<T>(string collectionName)
+        {
+            return _database.GetCollection<T>(collectionName);
         }
 
         /// <summary>

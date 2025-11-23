@@ -16,6 +16,33 @@ builder.Services.AddSingleton<UsuarioService>();
 builder.Services.AddSingleton<ConfiguracionService>();
 builder.Services.AddSingleton<ConversacionService>();
 
+// Configurar OllamaService con HttpClient
+builder.Services.AddHttpClient<IOllamaService, OllamaService>((serviceProvider, client) =>
+{
+    var config = serviceProvider.GetRequiredService<IConfiguration>();
+    var ollamaUrl = config["Ollama:Url"] ?? "http://localhost:11434";
+    client.BaseAddress = new Uri(ollamaUrl);
+    client.Timeout = TimeSpan.FromSeconds(
+        int.Parse(config["Ollama:TimeoutSeconds"] ?? "30")
+    );
+});
+
+// Registrar OllamaService como singleton con configuración
+builder.Services.AddSingleton<IOllamaService>(serviceProvider =>
+{
+    var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient(nameof(OllamaService));
+    var logger = serviceProvider.GetRequiredService<ILogger<OllamaService>>();
+    var config = serviceProvider.GetRequiredService<IConfiguration>();
+
+    return new OllamaService(
+        httpClient,
+        logger,
+        config["Ollama:Url"] ?? "http://localhost:11434",
+        config["Ollama:ModelName"] ?? "llama-tcs"
+    );
+});
+
 // Add services to the container.
 builder.Services.AddControllers();
 
