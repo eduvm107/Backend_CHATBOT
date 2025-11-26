@@ -11,17 +11,17 @@ namespace ChatbotTCS.AdminAPI.Controllers
     [ApiController]
     public class FAQController : ControllerBase
     {
-        private readonly MongoDBService _mongoDBService;
+        private readonly FAQService _faqService;
         private readonly ILogger<FAQController> _logger;
 
         /// <summary>
         /// Constructor del controlador FAQ
         /// </summary>
-        /// <param name="mongoDBService">Servicio de MongoDB</param>
+        /// <param name="faqService">Servicio de FAQs</param>
         /// <param name="logger">Logger para registrar eventos</param>
-        public FAQController(MongoDBService mongoDBService, ILogger<FAQController> logger)
+        public FAQController(FAQService faqService, ILogger<FAQController> logger)
         {
-            _mongoDBService = mongoDBService;
+            _faqService = faqService;
             _logger = logger;
         }
 
@@ -38,7 +38,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
         {
             try
             {
-                var faqs = await _mongoDBService.GetAllFAQsAsync();
+                var faqs = await _faqService.GetAllAsync();
                 return Ok(faqs);
             }
             catch (Exception ex)
@@ -64,7 +64,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
         {
             try
             {
-                var faq = await _mongoDBService.GetFAQByIdAsync(id);
+                var faq = await _faqService.GetByIdAsync(id);
 
                 if (faq == null)
                 {
@@ -120,7 +120,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
                     return BadRequest(new { message = "La categoría es requerida" });
                 }
 
-                await _mongoDBService.CreateFAQAsync(faq);
+                await _faqService.CreateAsync(faq);
 
                 _logger.LogInformation("FAQ creada exitosamente con ID: {Id}", faq.Id);
 
@@ -176,7 +176,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
                     return BadRequest(new { message = "La categoría es requerida" });
                 }
 
-                var updated = await _mongoDBService.UpdateFAQAsync(id, faq);
+                var updated = await _faqService.UpdateAsync(id, faq);
 
                 if (!updated)
                 {
@@ -210,7 +210,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
         {
             try
             {
-                var deleted = await _mongoDBService.DeleteFAQAsync(id);
+                var deleted = await _faqService.DeleteAsync(id);
 
                 if (!deleted)
                 {
@@ -242,7 +242,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
         {
             try
             {
-                var faqs = await _mongoDBService.SearchFAQsAsync(query);
+                var faqs = await _faqService.SearchAsync(query);
                 return Ok(faqs);
             }
             catch (Exception ex)

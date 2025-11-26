@@ -25,21 +25,22 @@ namespace ChatbotTCS.AdminAPI.Controllers
     {
         private readonly IOllamaService _ollamaService;
         private readonly IMongoCollection<Conversacion> _conversacionesCollection;
-        private readonly IMongoCollection<FAQ> _faqCollection;
+        private readonly FAQService _faqService;
         private readonly ILogger<ChatbotController> _logger;
 
         public ChatbotController(
             IOllamaService ollamaService,
             MongoDBService mongoDBService,
+            FAQService faqService,
             ILogger<ChatbotController> logger
         )
         {
             _ollamaService = ollamaService;
+            _faqService = faqService;
             _logger = logger;
 
-            // Obtener colecciones desde MongoDBService
+            // Obtener colección de conversaciones desde MongoDBService
             _conversacionesCollection = mongoDBService.GetCollection<Conversacion>("conversaciones");
-            _faqCollection = mongoDBService.GetCollection<FAQ>("faqs");
         }
 
         // ============================================
@@ -199,7 +200,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
             try
             {
                 var totalConversaciones = await _conversacionesCollection.CountDocumentsAsync(FilterDefinition<Conversacion>.Empty);
-                
+
                 // Calcula promedio de satisfacción
                 var pipeline = new[]
                 {
@@ -218,7 +219,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
                 {
                     totalConversaciones = totalConversaciones,
                     promedioSatisfaccion = Math.Round(promedioSatisfaccion, 2),
-                    totalFAQs = await _faqCollection.CountDocumentsAsync(FilterDefinition<FAQ>.Empty),
+                    totalFAQs = await _faqService.CountAsync(),
                     estadoOllama = await _ollamaService.ObtenerInfoModeloAsync()
                 };
 
@@ -261,25 +262,14 @@ namespace ChatbotTCS.AdminAPI.Controllers
         // ============================================
 
         /// <summary>
-        /// Busca contexto relevante en FAQs usando búsqueda de similitud
+        /// Busca contexto relevante en FAQs usando búsqueda regex
         /// </summary>
         private async Task<string> BuscarContextoFAQ(string pregunta)
         {
             try
             {
-                // Búsqueda simple por palabras clave
-                var palabrasClave = pregunta.ToLower().Split(' ');
-
-                var filter = Builders<FAQ>.Filter.Or(
-                    palabrasClave.Select(palabra =>
-                        Builders<FAQ>.Filter.Text(palabra)
-                    ).ToList()
-                );
-
-                var faqs = await _faqCollection
-                    .Find(filter)
-                    .Limit(3)
-                    .ToListAsync();
+                // Usar el método BuscarRelevantesAsync del FAQService
+                var faqs = await _faqService.BuscarRelevantesAsync(pregunta);
 
                 if (!faqs.Any())
                 {

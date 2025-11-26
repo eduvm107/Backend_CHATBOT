@@ -9,6 +9,7 @@ builder.Services.Configure<MongoDBSettings>(
 
 // Registrar todos los servicios como Singleton
 builder.Services.AddSingleton<MongoDBService>();
+builder.Services.AddSingleton<FAQService>();
 builder.Services.AddSingleton<MensajeAutomaticoService>();
 builder.Services.AddSingleton<DocumentoService>();
 builder.Services.AddSingleton<ActividadService>();
