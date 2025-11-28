@@ -57,6 +57,12 @@ namespace ChatbotTCS.AdminAPI.Models
         /// </summary>
         [BsonElement("resuelto")]
         public bool Resuelto { get; set; } = false;
+
+        /// <summary>
+        /// Indica si la conversación es un favorito
+        /// </summary>
+        [BsonElement("favorito")]
+        public bool Favorito { get; set; } = false;
     }
 
     /// <summary>

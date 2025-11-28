@@ -273,5 +273,35 @@ namespace ChatbotTCS.AdminAPI.Controllers
                 return StatusCode(500, new { message = "Error al agregar mensaje", error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Actualiza el estado de favorito de una conversación
+        /// </summary>
+        [HttpPatch("{id}/favorito")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdateFavorito(string id, [FromBody] bool favorito)
+        {
+            try
+            {
+                var updated = await _conversacionService.UpdateFavoritoAsync(id, favorito);
+
+                if (!updated)
+                {
+                    _logger.LogWarning("Conversación no encontrada para actualizar favorito con ID: {Id}", id);
+                    return NotFound(new { message = $"Conversación con ID {id} no encontrada" });
+                }
+
+                _logger.LogInformation("Estado de favorito actualizado para conversación con ID: {Id}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar favorito de conversación con ID: {Id}", id);
+                return StatusCode(500, new { message = "Error al actualizar favorito", error = ex.Message });
+            }
+        }
     }
 }
