@@ -6,6 +6,7 @@ namespace ChatbotTCS.AdminAPI.Models
     /// <summary>
     /// Modelo para actividades de onboarding
     /// </summary>
+    [BsonIgnoreExtraElements]  
     public class Actividad
     {
         /// <summary>
@@ -136,6 +137,28 @@ namespace ChatbotTCS.AdminAPI.Models
         /// </summary>
         [BsonElement("fechaCreacion")]
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+
+
+        /// <sumary>
+        /// fecha de actividad
+        /// </sumary>
+        [BsonElement("fecha_de_actividad")]
+        public DateTime FechaActividad { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// ID del usuario asignado a la actividad (nullable)
+        /// </summary>
+        [BsonElement("usuarioID")]
+        [BsonRepresentation(BsonType.ObjectId)]
+        [BsonIgnoreIfNull]
+        public string? UsuarioID { get; set; }
+
+        /// <summary>
+        /// Indica si la actividad es marcada como favorita
+        /// </summary>
+        [BsonElement("favorito")]
+        public bool Favorito { get; set; } = false;
+
 
         /// <summary>
         /// Fecha de la actividad (manual)

@@ -6,6 +6,7 @@ namespace ChatbotTCS.AdminAPI.Models
     /// <summary>
     /// Modelo para documentos del sistema
     /// </summary>
+    [BsonIgnoreExtraElements]
     public class Documento
     {
         /// <summary>
@@ -26,7 +27,7 @@ namespace ChatbotTCS.AdminAPI.Models
         /// </summary>
         [BsonElement("descripcion")]
         public string Descripcion { get; set; } = string.Empty;
-
+        ////
         /// <summary>
         /// URL del documento
         /// </summary>
@@ -137,5 +138,8 @@ namespace ChatbotTCS.AdminAPI.Models
         /// </summary>
         [BsonElement("valoracion")]
         public int Valoracion { get; set; } = 0;
+
+        [BsonElement("favorito")]
+        public bool Favorito { get; set; } = false;
     }
 }
