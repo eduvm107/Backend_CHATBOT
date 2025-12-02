@@ -49,7 +49,7 @@ namespace ChatbotTCS.AdminAPI.Services
             }
         }
 
-        // 2. MÉTODO: Chat Estándar (Sin Streaming - Para uso interno o mensajes cortos)
+        // 2. MÉTODO: Chat Estándar 
         public async Task<string> ChatAsync(string promptSistema, string preguntaUsuario)
         {
             var request = new ChatRequest
