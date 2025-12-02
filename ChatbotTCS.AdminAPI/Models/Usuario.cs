@@ -327,5 +327,17 @@ namespace ChatbotTCS.AdminAPI.Models
         [BsonElement("satisfaccionPromedio")]
         [BsonIgnoreIfNull]
         public double? SatisfaccionPromedio { get; set; }
+
+        [BsonElement("contraseña")]
+        public string Contrasena { get; set; } = string.Empty;
+
+        [BsonElement("rol")]
+        public string Rol { get; set; } = "Usuario";
+
+        [BsonElement("favoritosDocumentos")]
+        public List<string> FavoritosDocumentos { get; set; } = new();
+
+        [BsonElement("favoritosActividades")]
+        public List<string> FavoritosActividades { get; set; } = new();
     }
 }

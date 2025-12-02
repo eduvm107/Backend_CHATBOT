@@ -27,7 +27,7 @@ namespace ChatbotTCS.AdminAPI.Models
         /// </summary>
         [BsonElement("descripcion")]
         public string Descripcion { get; set; } = string.Empty;
-
+        ////
         /// <summary>
         /// URL del documento
         /// </summary>
