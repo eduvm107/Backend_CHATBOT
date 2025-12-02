@@ -1,11 +1,16 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using System.Text.Json.Serialization;
 
 namespace ChatbotTCS.AdminAPI.Models
 {
     /// <summary>
     /// Modelo para actividades de onboarding
+
+    /// </summary>lll
+
     /// </summary>
+    [BsonIgnoreExtraElements]
     public class Actividad
     {
         /// <summary>
@@ -104,13 +109,13 @@ namespace ChatbotTCS.AdminAPI.Models
         /// Materiales necesarios que debe traer el participante
         /// </summary>
         [BsonElement("materialesNecesarios")]
-        public List<string> MaterialesNecesarios { get; set; } = new List<string>();
+        public List<string> MaterialesNecesarios { get; set; } = new();
 
         /// <summary>
         /// Materiales que se proporcionan en la actividad
         /// </summary>
         [BsonElement("materialesProporcionados")]
-        public List<string> MaterialesProporcionados { get; set; } = new List<string>();
+        public List<string> MaterialesProporcionados { get; set; } = new();
 
         /// <summary>
         /// Preparación previa necesaria (nullable)
@@ -123,7 +128,7 @@ namespace ChatbotTCS.AdminAPI.Models
         /// Lista de IDs de actividades siguientes
         /// </summary>
         [BsonElement("actividadesSiguientes")]
-        public List<string> ActividadesSiguientes { get; set; } = new List<string>();
+        public List<string> ActividadesSiguientes { get; set; } = new();
 
         /// <summary>
         /// Estado de la actividad
@@ -138,9 +143,24 @@ namespace ChatbotTCS.AdminAPI.Models
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
         /// <summary>
-        /// Fecha de la actividad (manual)
+        /// Fecha de la actividad (campo en Mongo: fecha_de_actividad)
         /// </summary>
         [BsonElement("fecha_de_actividad")]
-        public DateTime FechaDeActividad { get; set; }
+        public DateTime FechaDeActividad { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// ID del usuario asignado a la actividad.
+        /// En Mongo se guarda como 'UsuarioID' (ObjectId), en JSON se expone como 'usuarioId'.
+        /// </summary>
+        [BsonElement("UsuarioID")]
+        [BsonRepresentation(BsonType.ObjectId)]
+        [JsonPropertyName("usuarioId")]
+        public string? UsuarioId { get; set; }
+
+        /// <summary>
+        /// Indica si la actividad es favorita para el usuario
+        /// </summary>
+        [BsonElement("favorito")]
+        public bool Favorito { get; set; } = false;
     }
 }

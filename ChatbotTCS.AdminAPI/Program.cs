@@ -7,6 +7,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<MongoDBSettings>(
     builder.Configuration.GetSection("MongoDB"));
 
+// Asegúrate de que esto esté en Program.cs
+builder.Services.AddScoped<ChatbotTCS.AdminAPI.Services.ActividadService>();
+
+// --- NUEVOS SERVICIOS (RAG) ---
+// Registramos OllamaService2 para usar la config "OllamaRAG"
+builder.Services.AddHttpClient<ChatbotTCS.AdminAPI.Services.OllamaService2>();
+
+// Registramos RagMongoService como Singleton (o Scoped)
+builder.Services.AddSingleton<ChatbotTCS.AdminAPI.Services.RagMongoService>();
+
 // Registrar todos los servicios como Singleton
 builder.Services.AddSingleton<MongoDBService>();
 builder.Services.AddSingleton<MensajeAutomaticoService>();
@@ -17,13 +27,13 @@ builder.Services.AddSingleton<ConfiguracionService>();
 builder.Services.AddSingleton<ConversacionService>();
 
 // Configurar OllamaService con HttpClient
-builder.Services.AddHttpClient<IOllamaService, OllamaService>((serviceProvider, client) =>
+builder.Services.AddHttpClient("OllamaClient", (serviceProvider, client) =>
 {
     var config = serviceProvider.GetRequiredService<IConfiguration>();
     var ollamaUrl = config["Ollama:Url"] ?? "http://localhost:11434";
     client.BaseAddress = new Uri(ollamaUrl);
     client.Timeout = TimeSpan.FromSeconds(
-        int.Parse(config["Ollama:TimeoutSeconds"] ?? "30")
+        int.Parse(config["Ollama:TimeoutSeconds"] ?? "300")
     );
 });
 
@@ -31,7 +41,7 @@ builder.Services.AddHttpClient<IOllamaService, OllamaService>((serviceProvider, 
 builder.Services.AddSingleton<IOllamaService>(serviceProvider =>
 {
     var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
-    var httpClient = httpClientFactory.CreateClient(nameof(OllamaService));
+    var httpClient = httpClientFactory.CreateClient("OllamaClient");
     var logger = serviceProvider.GetRequiredService<ILogger<OllamaService>>();
     var config = serviceProvider.GetRequiredService<IConfiguration>();
 

@@ -280,6 +280,7 @@ namespace ChatbotTCS.AdminAPI.Services
         }
 
         /// <summary>
+
         /// Alterna el estado de favorito de un recurso (documento, actividad, chat) para un usuario.
         /// Retorna true si se marcó como favorito, false si se desmarcó.
         /// </summary>
@@ -413,6 +414,22 @@ namespace ChatbotTCS.AdminAPI.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener favoritos para usuario {UsuarioId}", usuarioId);
+
+        /// Busca un usuario por token de restablecimiento de contraseña
+        /// </summary>
+        public async Task<Usuario?> GetByResetTokenAsync(string token)
+        {
+            try
+            {
+                _logger.LogInformation("Buscando usuario por token de restablecimiento");
+
+                var filter = Builders<Usuario>.Filter.Eq(u => u.ResetPasswordToken, token);
+                return await _usuariosCollection.Find(filter).FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar usuario por token de restablecimiento");
+
                 throw;
             }
         }

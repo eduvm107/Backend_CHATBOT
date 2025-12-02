@@ -231,6 +231,41 @@ namespace ChatbotTCS.AdminAPI.Services
             }
         }
 
+
+        // --- AGREGA ESTO AL FINAL DE TU CLASE DocumentoService ---
+
+        /// <summary>
+        /// Busca documentos por coincidencia de texto (para el Chatbot)
+        /// </summary>
+        public async Task<List<Documento>> BuscarRecursosAsync(string busqueda)
+        {
+            try
+            {
+                // 1. Si está vacío, no devolvemos nada
+                if (string.IsNullOrWhiteSpace(busqueda)) return new List<Documento>();
+
+                _logger.LogInformation("Chatbot buscando recursos con término: {Busqueda}", busqueda);
+
+                // 2. Escapamos caracteres especiales para evitar errores de Regex
+                var patron = System.Text.RegularExpressions.Regex.Escape(busqueda);
+                var regex = new BsonRegularExpression(patron, "i"); // 'i' = ignora mayúsculas/minúsculas
+
+                var builder = Builders<Documento>.Filter;
+
+                // 3. BUSCAMOS EN 3 CAMPOS A LA VEZ (Título, Descripción o Categoría)
+                var filter = builder.Regex(d => d.Titulo, regex) |
+                             builder.Regex(d => d.Descripcion, regex) |
+                             builder.Regex(d => d.Categoria, regex);
+
+                // Limitamos a 5 resultados para no saturar el chat
+                return await _documentosCollection.Find(filter).Limit(5).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar recursos para el chatbot");
+                return new List<Documento>();
+            }
+        }
         /// <summary>
         /// Actualiza el estado de favorito de un documento
         /// </summary>
@@ -256,6 +291,7 @@ namespace ChatbotTCS.AdminAPI.Services
             {
                 _logger.LogError(ex, "Error al actualizar estado de favorito para documento con ID: {Id}", id);
                 throw;
+
             }
         }
 

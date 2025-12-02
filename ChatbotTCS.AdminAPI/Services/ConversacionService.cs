@@ -271,6 +271,77 @@ namespace ChatbotTCS.AdminAPI.Services
         }
 
         /// <summary>
+        /// Obtiene la conversación activa de un usuario o crea una nueva si no existe.
+        /// </summary>
+        public async Task<Conversacion> ObtenerConversacionActivaAsync(string usuarioId)
+        {
+            try
+            {
+                // 1. Buscamos si ya tiene una conversación abierta
+                var filter = Builders<Conversacion>.Filter.And(
+                    Builders<Conversacion>.Filter.Eq(c => c.UsuarioId, usuarioId),
+                    Builders<Conversacion>.Filter.Eq(c => c.Activa, true)
+                );
+
+                // Ordenamos por fecha para traer la más reciente
+                var sort = Builders<Conversacion>.Sort.Descending(c => c.FechaUltimaMensaje);
+
+                var conversacion = await _conversacionesCollection.Find(filter).Sort(sort).FirstOrDefaultAsync();
+
+                // 2. Si no existe, creamos una nueva automáticamente
+                if (conversacion == null)
+                {
+                    _logger.LogInformation("No se encontró conversación activa para {UsuarioId}. Creando nueva...", usuarioId);
+
+                    conversacion = new Conversacion
+                    {
+                        UsuarioId = usuarioId,
+                        Activa = true,
+                        FechaInicio = DateTime.UtcNow,
+                        FechaUltimaMensaje = DateTime.UtcNow,
+                        Mensajes = new List<Mensaje>()
+                    };
+
+                    await _conversacionesCollection.InsertOneAsync(conversacion);
+                }
+
+                return conversacion;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en RAG: ObtenerConversacionActivaAsync");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Obtiene los últimos N mensajes formateados como texto para dar contexto a la IA.
+        /// </summary>
+        public async Task<string> ObtenerHistorialTextoAsync(string usuarioId, int ultimosN = 2)
+        {
+            try
+            {
+                var conv = await ObtenerConversacionActivaAsync(usuarioId);
+
+                if (conv == null || conv.Mensajes == null || conv.Mensajes.Count == 0)
+                    return "";
+
+                // Tomamos solo los últimos mensajes para no saturar el prompt
+                var recientes = conv.Mensajes.TakeLast(ultimosN);
+
+                // Formateamos: "Usuario: hola \n Asistente: hola..."
+                var historialTexto = string.Join("\n", recientes.Select(m =>
+                    $"{(m.Tipo == "usuario" ? "Usuario" : "Asistente")}: {m.Contenido}"));
+
+                return historialTexto;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar historial de texto");
+                return "";
+            }
+        }// Si falla, devolvemos vacío para no romper el chat
+
         /// Actualiza el estado de favorito de una conversación
         /// </summary>
         public async Task<bool> UpdateFavoritoAsync(string id, bool favorito)
