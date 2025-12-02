@@ -20,7 +20,7 @@ namespace ChatbotTCS.AdminAPI.Services
         /// Constructor del servicio con inyección de dependencias
         /// </summary>
         public UsuarioService(
-            IOptions<MongoDBSettings> settings, 
+            IOptions<MongoDBSettings> settings,
             ILogger<UsuarioService> logger,
             DocumentoService documentoService,
             ActividadService actividadService,
@@ -288,7 +288,7 @@ namespace ChatbotTCS.AdminAPI.Services
         {
             try
             {
-                _logger.LogInformation("Alternando favorito para usuario {UsuarioId}, tipo {TipoRecurso}, recurso {RecursoId}", 
+                _logger.LogInformation("Alternando favorito para usuario {UsuarioId}, tipo {TipoRecurso}, recurso {RecursoId}",
                     usuarioId, tipoRecurso, recursoId);
 
                 // 1. Identificar el array correcto según el tipo de recurso
@@ -301,7 +301,7 @@ namespace ChatbotTCS.AdminAPI.Services
                 };
 
                 var filter = Builders<Usuario>.Filter.Eq(u => u.Id, usuarioId);
-                
+
                 // 2. Intentar QUITAR el recurso (Desmarcar) usando $pull
                 var pullUpdate = Builders<Usuario>.Update.Pull(arrayToModify, recursoId);
                 var pullResult = await _usuariosCollection.UpdateOneAsync(filter, pullUpdate);
@@ -317,7 +317,7 @@ namespace ChatbotTCS.AdminAPI.Services
                     // 3. Si no se removió, entonces AGREGAR (Marcar) usando $addToSet
                     var pushUpdate = Builders<Usuario>.Update.AddToSet(arrayToModify, recursoId);
                     var pushResult = await _usuariosCollection.UpdateOneAsync(filter, pushUpdate);
-                    
+
                     if (pushResult.ModifiedCount > 0)
                     {
                         _logger.LogInformation("Recurso {RecursoId} marcado como favorito", recursoId);
@@ -406,7 +406,7 @@ namespace ChatbotTCS.AdminAPI.Services
                     }));
                 }
 
-                _logger.LogInformation("Se encontraron {Count} favoritos para usuario {UsuarioId}", 
+                _logger.LogInformation("Se encontraron {Count} favoritos para usuario {UsuarioId}",
                     listaFavoritosFinal.Count, usuarioId);
 
                 return listaFavoritosFinal;
@@ -414,7 +414,9 @@ namespace ChatbotTCS.AdminAPI.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener favoritos para usuario {UsuarioId}", usuarioId);
-
+                return new List<RecursoFavorito>();
+            }
+        }
         /// Busca un usuario por token de restablecimiento de contraseña
         /// </summary>
         public async Task<Usuario?> GetByResetTokenAsync(string token)
@@ -433,5 +435,5 @@ namespace ChatbotTCS.AdminAPI.Services
                 throw;
             }
         }
-    }
+    } 
 }

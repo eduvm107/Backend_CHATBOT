@@ -255,13 +255,15 @@ namespace ChatbotTCS.AdminAPI.Services
                 // Buscar usando BsonDocument para filtrar por _id (que es ObjectId en MongoDB)
                 var filterBuilder = Builders<Actividad>.Filter;
                 var filter = filterBuilder.In("_id", objectIds);
-                
+
                 return await _actividadesCollection.Find(filter).ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al buscar actividades por lista de IDs.");
                 throw;
+            }
+        }
 
         // Agrega este método dentro de ActividadService.cs
 

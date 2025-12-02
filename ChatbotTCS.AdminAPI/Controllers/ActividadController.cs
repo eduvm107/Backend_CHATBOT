@@ -224,6 +224,26 @@ namespace ChatbotTCS.AdminAPI.Controllers
         }
 
         /// <summary>
+        /// Obtiene actividades asignadas a un usuario específico
+        /// </summary>
+        [HttpGet("usuario/{usuarioId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<Actividad>>> GetByUsuarioId(string usuarioId)
+        {
+            try
+            {
+                var actividades = await _actividadService.GetByUsuarioIdAsync(usuarioId);
+                return Ok(actividades);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener actividades del usuario: {UsuarioId}", usuarioId);
+                return StatusCode(500, new { message = "Error al obtener actividades por usuario", error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Obtiene actividades obligatorias
         /// </summary>
         [HttpGet("obligatorias")]
