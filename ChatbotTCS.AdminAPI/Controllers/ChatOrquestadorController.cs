@@ -1,5 +1,5 @@
 ﻿using ChatbotTCS.AdminAPI.Services;
-using ChatbotTCS.AdminAPI.Models; // Necesario para crear objetos Mensaje
+using ChatbotTCS.AdminAPI.Models; 
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 
@@ -67,7 +67,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
             switch (intencion)
             {
                 case "SALUDO":
-                    promptSistema = $"Eres TCS Assistant hablando con {nombre}. Responde al saludo brevemente. Historial: {historialChat}";
+                    promptSistema = $"Eres TCS Assistant hablando con {nombre} HABLALE POR SU NOMBRE. Responde al saludo brevemente. Historial: {historialChat}";
                     break;
 
                 case "ACTIVIDAD":
@@ -78,7 +78,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
                         contextoDatos = "No hay actividades programadas.";
 
                     promptSistema = $@"
-                        Eres asistente de agenda para {nombre} hablale por su nombre. Hoy es: {DateTime.Now:dd/MM/yyyy}.
+                        Eres asistente de agenda para {nombre} hablale por su NOMBRE. Hoy es: {DateTime.Now:dd/MM/yyyy}.
                         Historial: {historialChat}
                         Actividades: {contextoDatos}
                         Instrucciones: Responde sobre la agenda. SI ya paso el dia informale que ya paso";
@@ -115,12 +115,12 @@ namespace ChatbotTCS.AdminAPI.Controllers
                         contextoDatos = "NO_INFO";
 
                     promptSistema = $@"
-                        Eres TCS Assistant hablando con {nombre} hablale por su nombre.
+                        Eres TCS Assistant hablando con {nombre} hablale POR SU NOMBRE.
                         HISTORIAL: {historialChat}
                         CONTEXTO OFICIAL: {contextoDatos}
                         
                         INSTRUCCIONES:
-                        1. Si el contexto es 'NO_INFO', discúlpate y di que no sabes.
+                        1. Si el contexto es 'NO_INFO', discúlpate y di que no sabes NO DES RECOMENDACIONES.
                         2. Responde usando SOLO el contexto oficial.
                         3. NO inventes nada y ni trates de responder.
                         4. Usa el historial para entender el hilo de la conversacion.
@@ -138,7 +138,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
                 Tipo = "bot",
                 Contenido = respuestaFinal,
                 Timestamp = DateTime.UtcNow,
-                IntencionDetectada = intencion // Guardamos qué decidió la IA
+                IntencionDetectada = intencion 
             };
             await _conversacionService.AddMensajeAsync(conversacion.Id!, msjBot);
 
