@@ -1,0 +1,48 @@
+# Archivos y carpetas a ignorar en el build de Docker
+
+# Binarios y build
+**/bin/
+**/obj/
+**/out/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.cache
+*.docstates
+*.userprefs
+
+# NuGet
+*.nupkg
+**/packages/
+
+# Archivos de prueba
+**/TestResults/
+
+# Node modules (si tienes frontend)
+**/node_modules/
+
+# Logs
+**/*.log
+
+# Documentación
+**/*.md
+!README.md
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+**/Dockerfile*
+**/docker-compose*
+**/.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

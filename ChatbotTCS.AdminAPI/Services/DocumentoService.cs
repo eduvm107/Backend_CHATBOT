@@ -88,6 +88,7 @@ namespace ChatbotTCS.AdminAPI.Services
 
                 documento.FechaPublicacion = DateTime.UtcNow;
                 documento.FechaActualizacion = DateTime.UtcNow;
+                documento.Favorito = false; // Asegurar que siempre se cree con favorito en false
                 await _documentosCollection.InsertOneAsync(documento);
 
                 _logger.LogInformation("Documento creado con ID: {Id}", documento.Id);
@@ -226,6 +227,34 @@ namespace ChatbotTCS.AdminAPI.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al buscar documentos por tag: {Tag}", tag);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Actualiza el estado de favorito de un documento
+        /// </summary>
+        public async Task<bool> UpdateFavoritoAsync(string id, bool favorito)
+        {
+            try
+            {
+                _logger.LogInformation("Actualizando estado de favorito para documento con ID: {Id}", id);
+
+                if (!ObjectId.TryParse(id, out _))
+                {
+                    _logger.LogWarning("ID inválido: {Id}", id);
+                    return false;
+                }
+
+                var filter = Builders<Documento>.Filter.Eq(d => d.Id, id);
+                var update = Builders<Documento>.Update.Set(d => d.Favorito, favorito);
+                var result = await _documentosCollection.UpdateOneAsync(filter, update);
+
+                return result.ModifiedCount > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar estado de favorito para documento con ID: {Id}", id);
                 throw;
             }
         }

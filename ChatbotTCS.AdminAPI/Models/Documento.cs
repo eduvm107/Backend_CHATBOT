@@ -96,6 +96,12 @@ namespace ChatbotTCS.AdminAPI.Models
         public bool Obligatorio { get; set; } = false;
 
         /// <summary>
+        /// Indica si el documento es un favorito
+        /// </summary>
+        [BsonElement("favorito")]
+        public bool Favorito { get; set; } = false;
+
+        /// <summary>
         /// Fecha de publicación del documento
         /// </summary>
         [BsonElement("fechaPublicacion")]

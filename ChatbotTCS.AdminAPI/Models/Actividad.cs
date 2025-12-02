@@ -138,6 +138,7 @@ namespace ChatbotTCS.AdminAPI.Models
         [BsonElement("fechaCreacion")]
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
+
         /// <sumary>
         /// fecha de actividad
         /// </sumary>
@@ -158,5 +159,11 @@ namespace ChatbotTCS.AdminAPI.Models
         [BsonElement("favorito")]
         public bool Favorito { get; set; } = false;
 
+
+        /// <summary>
+        /// Fecha de la actividad (manual)
+        /// </summary>
+        [BsonElement("fecha_de_actividad")]
+        public DateTime FechaDeActividad { get; set; }
     }
 }
