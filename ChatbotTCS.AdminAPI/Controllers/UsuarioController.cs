@@ -298,5 +298,92 @@ namespace ChatbotTCS.AdminAPI.Controllers
                 return StatusCode(500, new { message = "Error al obtener usuarios por departamento", error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Alterna el estado de favorito de un recurso para un usuario
+        /// </summary>
+        [HttpPost("{id}/favoritos")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<object>> ToggleFavorite(string id, [FromBody] FavoritoRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.TipoRecurso))
+                {
+                    return BadRequest(new { message = "El tipo de recurso es requerido" });
+                }
+
+                if (string.IsNullOrWhiteSpace(request.RecursoId))
+                {
+                    return BadRequest(new { message = "El ID del recurso es requerido" });
+                }
+
+                var isFavorito = await _usuarioService.ToggleFavoriteAsync(id, request.TipoRecurso, request.RecursoId);
+
+                _logger.LogInformation("Estado de favorito alternado para usuario {Id}, recurso {RecursoId}", id, request.RecursoId);
+                
+                return Ok(new { 
+                    message = isFavorito ? "Recurso marcado como favorito" : "Recurso desmarcado como favorito",
+                    isFavorito = isFavorito
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Tipo de recurso no válido");
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al alternar favorito para usuario {Id}", id);
+                return StatusCode(500, new { message = "Error al alternar favorito", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todos los recursos favoritos de un usuario (documentos, actividades, chats)
+        /// </summary>
+        [HttpGet("{id}/favoritos")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<RecursoFavorito>>> GetMisFavoritos(string id)
+        {
+            try
+            {
+                var favoritos = await _usuarioService.GetMisFavoritosAsync(id);
+                
+                if (favoritos == null || !favoritos.Any())
+                {
+                    _logger.LogInformation("No se encontraron favoritos para usuario {Id}", id);
+                    return Ok(new List<RecursoFavorito>());
+                }
+
+                return Ok(favoritos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener favoritos para usuario {Id}", id);
+                return StatusCode(500, new { message = "Error al obtener favoritos", error = ex.Message });
+            }
+        }
+    }
+
+    /// <summary>
+    /// Modelo para la solicitud de alternar favorito
+    /// </summary>
+    public class FavoritoRequest
+    {
+        /// <summary>
+        /// Tipo de recurso: "documento", "actividad", "chat"
+        /// </summary>
+        public string TipoRecurso { get; set; } = string.Empty;
+
+        /// <summary>
+        /// ID del recurso a marcar/desmarcar como favorito
+        /// </summary>
+        public string RecursoId { get; set; } = string.Empty;
     }
 }

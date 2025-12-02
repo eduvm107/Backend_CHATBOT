@@ -196,6 +196,20 @@ namespace ChatbotTCS.AdminAPI.Models
         public List<string> FavoritosChat { get; set; } = new List<string>();
 
         /// <summary>
+        /// Lista de IDs de documentos marcados como favoritos
+        /// </summary>
+        [BsonElement("favoritosDocumentos")]
+        [BsonIgnoreIfNull]
+        public List<string>? favoritosDocumentos { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Lista de IDs de actividades marcadas como favoritas
+        /// </summary>
+        [BsonElement("favoritosActividades")]
+        [BsonIgnoreIfNull]
+        public List<string>? favoritosActividades { get; set; } = new List<string>();
+
+        /// <summary>
         /// Preferencias del usuario
         /// </summary>
         [BsonElement("preferencias")]

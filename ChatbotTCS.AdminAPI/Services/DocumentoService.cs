@@ -258,5 +258,25 @@ namespace ChatbotTCS.AdminAPI.Services
                 throw;
             }
         }
+
+        /// <summary>
+        /// Obtiene una lista de documentos basada en una lista de IDs (para la lectura de favoritos unificada).
+        /// </summary>
+        public async Task<List<Documento>> FindByIdsAsync(List<string> ids)
+        {
+            try
+            {
+                _logger.LogInformation("Buscando {Count} documentos por IDs", ids.Count);
+
+                // El filtro $in selecciona todos los documentos donde el campo 'Id' coincide con cualquiera de los IDs en la lista
+                var filter = Builders<Documento>.Filter.In(d => d.Id, ids);
+                return await _documentosCollection.Find(filter).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar documentos por lista de IDs.");
+                throw;
+            }
+        }
     }
 }

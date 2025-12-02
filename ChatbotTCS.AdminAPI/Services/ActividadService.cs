@@ -227,5 +227,24 @@ namespace ChatbotTCS.AdminAPI.Services
                 throw;
             }
         }
+
+        /// <summary>
+        /// Obtiene una lista de actividades basada en una lista de IDs (para la lectura de favoritos unificada).
+        /// </summary>
+        public async Task<List<Actividad>> FindByIdsAsync(List<string> ids)
+        {
+            try
+            {
+                _logger.LogInformation("Buscando {Count} actividades por IDs", ids.Count);
+
+                var filter = Builders<Actividad>.Filter.In(a => a.Id, ids);
+                return await _actividadesCollection.Find(filter).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar actividades por lista de IDs.");
+                throw;
+            }
+        }
     }
 }
