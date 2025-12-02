@@ -262,14 +262,12 @@ namespace ChatbotTCS.AdminAPI.Services
             {
                 _logger.LogError(ex, "Error al buscar actividades por lista de IDs.");
                 throw;
-
-        // Agrega este método dentro de ActividadService.cs
+            }
+        }
 
         /// <summary>
         /// Obtiene actividades específicas de un usuario
         /// </summary>
-        // En ActividadService.cs
-
         public async Task<List<Actividad>> GetByUsuarioIdAsync(string usuarioId)
         {
             try
@@ -287,7 +285,6 @@ namespace ChatbotTCS.AdminAPI.Services
             {
                 _logger.LogError(ex, "Error al obtener actividades del usuario: {UsuarioId}", usuarioId);
                 return new List<Actividad>();
-
             }
         }
     }

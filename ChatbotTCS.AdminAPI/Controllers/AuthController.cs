@@ -306,6 +306,43 @@ namespace ChatbotTCS.AdminAPI.Controllers
             }
         }
 
+        public class EmailRequest
+        {
+            public string Email { get; set; } = string.Empty;
+        }
+
+        [HttpPost("temporary-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GenerarContrasenaTemporal([FromBody] EmailRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Email))
+                {
+                    return BadRequest(new { message = "El correo electrónico es requerido" });
+                }
+
+                var smtpUser = "supererhos1402@gmail.com";
+                var smtpPassword = "bmwf uazx woei orxu";
+
+                var resultado = await _usuarioService.GenerarYEnviarContrasenaTemporalAsync(request.Email, smtpUser, smtpPassword);
+
+                if (!resultado)
+                {
+                    return NotFound(new { message = "Usuario no encontrado" });
+                }
+
+                return Ok(new { message = "Contraseña temporal generada y enviada exitosamente" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar contraseña temporal para email: {Email}", request.Email);
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
         private string GenerateSecureToken()
         {
             using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())

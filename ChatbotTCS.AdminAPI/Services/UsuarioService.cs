@@ -414,7 +414,11 @@ namespace ChatbotTCS.AdminAPI.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener favoritos para usuario {UsuarioId}", usuarioId);
+                throw;
+            }
+        }
 
+        /// <summary>
         /// Busca un usuario por token de restablecimiento de contraseña
         /// </summary>
         public async Task<Usuario?> GetByResetTokenAsync(string token)
@@ -431,6 +435,57 @@ namespace ChatbotTCS.AdminAPI.Services
                 _logger.LogError(ex, "Error al buscar usuario por token de restablecimiento");
 
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Genera una contraseña temporal y la envía al correo del usuario
+        /// </summary>
+        public async Task<bool> GenerarYEnviarContrasenaTemporalAsync(string email, string smtpUser, string smtpPassword)
+        {
+            try
+            {
+                _logger.LogInformation("Generando contraseña temporal para usuario con email: {Email}", email);
+
+                var usuario = await GetByEmailAsync(email);
+                if (usuario == null)
+                {
+                    _logger.LogWarning("Usuario no encontrado para email: {Email}", email);
+                    return false;
+                }
+
+                // Generar contraseña temporal
+                var contrasenaTemporal = Guid.NewGuid().ToString().Substring(0, 8);
+                usuario.Contraseña = contrasenaTemporal; // Aquí puedes encriptar la contraseña si es necesario
+                usuario.FechaActualizacion = DateTime.UtcNow;
+
+                await UpdateAsync(usuario.Id!, usuario);
+
+                // Enviar correo electrónico
+                using (var smtpClient = new System.Net.Mail.SmtpClient("smtp.gmail.com", 587))
+                {
+                    smtpClient.Credentials = new System.Net.NetworkCredential(smtpUser, smtpPassword);
+                    smtpClient.EnableSsl = true;
+
+                    var mailMessage = new System.Net.Mail.MailMessage
+                    {
+                        From = new System.Net.Mail.MailAddress(smtpUser),
+                        Subject = "Contraseña Temporal",
+                        Body = $"Hola {usuario.Nombre},\n\nTu nueva contraseña temporal es: {contrasenaTemporal}\n\nPor favor, cámbiala después de iniciar sesión.",
+                        IsBodyHtml = false
+                    };
+                    mailMessage.To.Add(email);
+
+                    await smtpClient.SendMailAsync(mailMessage);
+                }
+
+                _logger.LogInformation("Contraseña temporal enviada exitosamente a: {Email}", email);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar o enviar contraseña temporal para email: {Email}", email);
+                return false;
             }
         }
     }
