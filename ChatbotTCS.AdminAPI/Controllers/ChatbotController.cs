@@ -68,13 +68,28 @@ namespace ChatbotTCS.AdminAPI.Controllers
 
                 _logger.LogInformation($"🔍 Contexto FAQ encontrado: {(string.IsNullOrEmpty(contextoFAQ) ? "No" : "Sí")}");
 
-                // 2. Generar respuesta con Ollama
-                var respuesta = await _ollamaService.GenerarRespuestaAsync(
-                    request.Pregunta,
-                    contextoFAQ
-                );
+                // 2. Generar respuesta con Ollama usando prompts optimizados
+                string respuesta;
+                if (string.IsNullOrEmpty(contextoFAQ))
+                {
+                    // Sin contexto - respuesta general corta
+                    var promptSistema = @"Eres TCS Assistant, el asistente oficial de Tata Consultancy Services para Onboarding.
+Instrucciones: Responde de forma amable, profesional y concisa. Máximo 60 palabras.
+Si no sabes la respuesta, sugiere contactar a RRHH.";
 
-                _logger.LogInformation($"✅ Respuesta generada exitosamente");
+                    respuesta = await _ollamaService.ChatAsync(promptSistema, request.Pregunta);
+                }
+                else
+                {
+                    // Con contexto - respuesta basada en FAQs
+                    var promptSistema = $@"Eres TCS Assistant. Responde basándote SOLO en la información del contexto.
+Instrucciones: Respuesta clara, directa y profesional. Máximo 80 palabras.
+{contextoFAQ}";
+
+                    respuesta = await _ollamaService.ChatAsync(promptSistema, request.Pregunta);
+                }
+
+                _logger.LogInformation($"✅ Respuesta generada exitosamente ({respuesta.Split(' ').Length} palabras)");
 
                 // 3. Guardar conversación en MongoDB
                 var conversacion = new Conversacion
@@ -262,23 +277,32 @@ namespace ChatbotTCS.AdminAPI.Controllers
 
         /// <summary>
         /// Busca contexto relevante en FAQs usando búsqueda de similitud
+        /// Optimizado para respuestas cortas - máximo 2 FAQs
         /// </summary>
         private async Task<string> BuscarContextoFAQ(string pregunta)
         {
             try
             {
-                // Búsqueda simple por palabras clave
-                var palabrasClave = pregunta.ToLower().Split(' ');
+                // Búsqueda simple por palabras clave (filtrar palabras comunes)
+                var palabrasClave = pregunta.ToLower()
+                    .Split(' ')
+                    .Where(p => p.Length > 3) // Ignorar palabras muy cortas
+                    .Take(5) // Máximo 5 palabras clave
+                    .ToList();
 
-                var filter = Builders<FAQ>.Filter.Or(
-                    palabrasClave.Select(palabra =>
-                        Builders<FAQ>.Filter.Text(palabra)
-                    ).ToList()
-                );
+                if (!palabrasClave.Any())
+                {
+                    return null;
+                }
+
+                // Usar una sola búsqueda de texto con todas las palabras
+                // MongoDB solo permite una expresión $text por query
+                var textoBusqueda = string.Join(" ", palabrasClave);
+                var filter = Builders<FAQ>.Filter.Text(textoBusqueda);
 
                 var faqs = await _faqCollection
                     .Find(filter)
-                    .Limit(3)
+                    .Limit(2) // Reducido a 2 FAQs para contexto más corto
                     .ToListAsync();
 
                 if (!faqs.Any())
@@ -286,12 +310,16 @@ namespace ChatbotTCS.AdminAPI.Controllers
                     return null;
                 }
 
-                // Construir contexto de las FAQs encontradas
-                var contexto = "FAQs relevantes encontradas:\n";
+                // Construir contexto optimizado
+                var contexto = "Información relevante:\n";
                 foreach (var faq in faqs)
                 {
-                    contexto += $"\nPregunta: {faq.Pregunta}\n";
-                    contexto += $"Respuesta: {faq.Respuesta}\n";
+                    // Limitar longitud de respuestas en el contexto
+                    var respuestaCorta = faq.Respuesta.Length > 200
+                        ? faq.Respuesta.Substring(0, 200) + "..."
+                        : faq.Respuesta;
+
+                    contexto += $"\n- {faq.Pregunta}\n  {respuestaCorta}\n";
                 }
 
                 return contexto;

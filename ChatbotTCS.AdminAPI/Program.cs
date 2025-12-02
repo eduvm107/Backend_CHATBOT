@@ -34,21 +34,23 @@ builder.Services.AddHttpClient("OllamaClient", (serviceProvider, client) =>
     );
 });
 
-// Registrar OllamaService como singleton con configuración
+// Registrar OllamaService2 como singleton con configuración
 builder.Services.AddSingleton<IOllamaService>(serviceProvider =>
 {
     var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
     var httpClient = httpClientFactory.CreateClient("OllamaClient");
-    var logger = serviceProvider.GetRequiredService<ILogger<OllamaService>>();
+    var logger = serviceProvider.GetRequiredService<ILogger<OllamaService2>>();
     var config = serviceProvider.GetRequiredService<IConfiguration>();
 
-    return new OllamaService(
+    return new OllamaService2(
         httpClient,
-        logger,
-        config["Ollama:Url"] ?? "http://localhost:11434",
-        config["Ollama:ModelName"] ?? "llama-tcs"
+        config,
+        logger
     );
 });
+
+// Registrar servicio de precarga automática de Ollama
+builder.Services.AddHostedService<OllamaWarmupService>();
 
 // Add services to the container.
 builder.Services.AddControllers()
