@@ -294,5 +294,41 @@ namespace ChatbotTCS.AdminAPI.Services
 
             }
         }
+
+        /// <summary>
+        /// Obtiene una lista de documentos basada en una lista de IDs (para la lectura de favoritos unificada).
+        /// </summary>
+        public async Task<List<Documento>> FindByIdsAsync(List<string> ids)
+        {
+            try
+            {
+                _logger.LogInformation("Buscando {Count} documentos por IDs", ids.Count);
+
+                // Convertir los IDs de string a ObjectId para buscar correctamente en MongoDB
+                var objectIds = ids
+                    .Where(id => ObjectId.TryParse(id, out _))  // Filtrar solo IDs válidos
+                    .Select(id => ObjectId.Parse(id))
+                    .ToList();
+
+                if (objectIds.Count == 0)
+                {
+                    _logger.LogWarning("No se encontraron IDs válidos para buscar documentos");
+                    return new List<Documento>();
+                }
+
+                _logger.LogInformation("Convertidos {Count} IDs válidos a ObjectId", objectIds.Count);
+
+                // Buscar usando BsonDocument para filtrar por _id (que es ObjectId en MongoDB)
+                var filterBuilder = Builders<Documento>.Filter;
+                var filter = filterBuilder.In("_id", objectIds);
+                
+                return await _documentosCollection.Find(filter).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar documentos por lista de IDs.");
+                throw;
+            }
+        }
     }
 }

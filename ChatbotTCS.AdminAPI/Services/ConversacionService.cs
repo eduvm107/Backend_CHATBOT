@@ -233,7 +233,6 @@ namespace ChatbotTCS.AdminAPI.Services
 
         /// <summary>
         /// Agrega un mensaje a una conversación existente
-        /// </summary>
         public async Task<bool> AddMensajeAsync(string id, Mensaje mensaje)
         {
             try
@@ -366,6 +365,30 @@ namespace ChatbotTCS.AdminAPI.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al actualizar estado de favorito para conversación con ID: {Id}", id);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todas las conversaciones marcadas como favoritas para un usuario específico.
+        /// </summary>
+        public async Task<List<Conversacion>> GetFavoritosByUsuarioAsync(string usuarioId)
+        {
+            try
+            {
+                _logger.LogInformation("Obteniendo conversaciones favoritas para usuario: {UsuarioId}", usuarioId);
+
+                // Definir el filtro doble (AND lógico)
+                var filter = Builders<Conversacion>.Filter.And(
+                    Builders<Conversacion>.Filter.Eq(c => c.UsuarioId, usuarioId),
+                    Builders<Conversacion>.Filter.Eq(c => c.Favorito, true)
+                );
+
+                return await _conversacionesCollection.Find(filter).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener conversaciones favoritas para usuario: {UsuarioId}", usuarioId);
                 throw;
             }
         }
