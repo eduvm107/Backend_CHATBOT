@@ -27,13 +27,13 @@ builder.Services.AddSingleton<ConfiguracionService>();
 builder.Services.AddSingleton<ConversacionService>();
 
 // Configurar OllamaService con HttpClient
-builder.Services.AddHttpClient<IOllamaService, OllamaService>((serviceProvider, client) =>
+builder.Services.AddHttpClient("OllamaClient", (serviceProvider, client) =>
 {
     var config = serviceProvider.GetRequiredService<IConfiguration>();
     var ollamaUrl = config["Ollama:Url"] ?? "http://localhost:11434";
     client.BaseAddress = new Uri(ollamaUrl);
     client.Timeout = TimeSpan.FromSeconds(
-        int.Parse(config["Ollama:TimeoutSeconds"] ?? "30")
+        int.Parse(config["Ollama:TimeoutSeconds"] ?? "300")
     );
 });
 
@@ -41,7 +41,7 @@ builder.Services.AddHttpClient<IOllamaService, OllamaService>((serviceProvider, 
 builder.Services.AddSingleton<IOllamaService>(serviceProvider =>
 {
     var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
-    var httpClient = httpClientFactory.CreateClient(nameof(OllamaService));
+    var httpClient = httpClientFactory.CreateClient("OllamaClient");
     var logger = serviceProvider.GetRequiredService<ILogger<OllamaService>>();
     var config = serviceProvider.GetRequiredService<IConfiguration>();
 

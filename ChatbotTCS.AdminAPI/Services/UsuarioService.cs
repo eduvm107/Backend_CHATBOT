@@ -267,5 +267,24 @@ namespace ChatbotTCS.AdminAPI.Services
                 throw;
             }
         }
+
+        /// <summary>
+        /// Busca un usuario por token de restablecimiento de contraseña
+        /// </summary>
+        public async Task<Usuario?> GetByResetTokenAsync(string token)
+        {
+            try
+            {
+                _logger.LogInformation("Buscando usuario por token de restablecimiento");
+
+                var filter = Builders<Usuario>.Filter.Eq(u => u.ResetPasswordToken, token);
+                return await _usuariosCollection.Find(filter).FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar usuario por token de restablecimiento");
+                throw;
+            }
+        }
     }
 }

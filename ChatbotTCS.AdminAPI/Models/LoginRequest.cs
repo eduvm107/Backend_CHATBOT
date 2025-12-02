@@ -11,14 +11,62 @@ namespace ChatbotTCS.AdminAPI.Models
         /// Email del usuario
         /// </summary>
         [Required(ErrorMessage = "El email es requerido")]
-        [EmailAddress(ErrorMessage = "El formato del email no es válido")]
+        [EmailAddress(ErrorMessage = "El formato del email no es vï¿½lido")]
         public string Email { get; set; } = string.Empty;
 
         /// <summary>
-        /// Contraseña del usuario
+        /// Contraseï¿½a del usuario
         /// </summary>
-        [Required(ErrorMessage = "La contraseña es requerida")]
+        [Required(ErrorMessage = "La contraseï¿½a es requerida")]
         public string Password { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Modelo para la solicitud de olvido de contraseï¿½a
+    /// </summary>
+    public class ForgotPasswordRequest
+    {
+        [Required(ErrorMessage = "El email es requerido")]
+        [EmailAddress(ErrorMessage = "El formato del email no es vï¿½lido")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Modelo para la respuesta de forgot-password con token
+    /// </summary>
+    public class ForgotPasswordResponse
+    {
+        /// <summary>
+        /// Mensaje de respuesta
+        /// </summary>
+        public string Message { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Token de restablecimiento (solo para desarrollo/testing)
+        /// </summary>
+        public string? Token { get; set; }
+    }
+
+    /// <summary>
+    /// Modelo para verificar el token de restablecimiento
+    /// </summary>
+    public class VerifyResetTokenRequest
+    {
+        [Required(ErrorMessage = "El token es requerido")]
+        public string Token { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Modelo para restablecer la contraseï¿½a con token
+    /// </summary>
+    public class ResetPasswordRequest
+    {
+        [Required(ErrorMessage = "El token es requerido")]
+        public string Token { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La nueva contraseï¿½a es requerida")]
+        [MinLength(6, ErrorMessage = "La contraseï¿½a debe tener al menos 6 caracteres")]
+        public string NewPassword { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -32,18 +80,35 @@ namespace ChatbotTCS.AdminAPI.Models
         public string Message { get; set; } = string.Empty;
 
         /// <summary>
-        /// Token de autenticación (opcional para futuras implementaciones)
+        /// Token de autenticaciï¿½n (opcional para futuras implementaciones)
         /// </summary>
         public string? Token { get; set; }
 
         /// <summary>
-        /// Información del usuario autenticado
+        /// Informaciï¿½n del usuario autenticado
         /// </summary>
         public UsuarioInfo Usuario { get; set; } = new UsuarioInfo();
     }
 
     /// <summary>
-    /// Información básica del usuario para respuestas
+    /// Modelo para cambiar contraseÃ±a cuando el usuario estÃ¡ autenticado
+    /// </summary>
+    public class ChangePasswordRequest
+    {
+        [Required(ErrorMessage = "El email es requerido")]
+        [EmailAddress(ErrorMessage = "El formato del email no es vÃ¡lido")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La contraseÃ±a actual es requerida")]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La nueva contraseÃ±a es requerida")]
+        [MinLength(6, ErrorMessage = "La contraseÃ±a debe tener al menos 6 caracteres")]
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Informaciï¿½n bï¿½sica del usuario para respuestas
     /// </summary>
     public class UsuarioInfo
     {
@@ -83,7 +148,7 @@ namespace ChatbotTCS.AdminAPI.Models
         public bool Activo { get; set; }
 
         /// <summary>
-        /// Estado de verificación del usuario
+        /// Estado de verificaciï¿½n del usuario
         /// </summary>
         public bool Verificado { get; set; }
 

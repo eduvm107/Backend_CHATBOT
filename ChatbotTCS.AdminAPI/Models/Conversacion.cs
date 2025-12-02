@@ -33,7 +33,11 @@ namespace ChatbotTCS.AdminAPI.Models
         [BsonElement("resuelto")]
         public bool Resuelto { get; set; } = false;
 
+
         // Agregado porque estaba en tu JSON
+        /// <summary>
+        /// Indica si la conversación es un favorito
+        /// </summary>
         [BsonElement("favorito")]
         public bool Favorito { get; set; } = false;
     }

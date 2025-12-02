@@ -88,6 +88,7 @@ namespace ChatbotTCS.AdminAPI.Services
 
                 conversacion.FechaInicio = DateTime.UtcNow;
                 conversacion.FechaUltimaMensaje = DateTime.UtcNow;
+                conversacion.Favorito = false; // Asegurar que siempre se cree con favorito en false
                 await _conversacionesCollection.InsertOneAsync(conversacion);
 
                 _logger.LogInformation("Conversación creada con ID: {Id}", conversacion.Id);
@@ -339,6 +340,31 @@ namespace ChatbotTCS.AdminAPI.Services
             {
                 _logger.LogError(ex, "Error al generar historial de texto");
                 return ""; // Si falla, devolvemos vacío para no romper el chat
+
+        /// Actualiza el estado de favorito de una conversación
+        /// </summary>
+        public async Task<bool> UpdateFavoritoAsync(string id, bool favorito)
+        {
+            try
+            {
+                _logger.LogInformation("Actualizando estado de favorito para conversación con ID: {Id}", id);
+
+                if (!ObjectId.TryParse(id, out _))
+                {
+                    _logger.LogWarning("ID inválido: {Id}", id);
+                    return false;
+                }
+
+                var filter = Builders<Conversacion>.Filter.Eq(c => c.Id, id);
+                var update = Builders<Conversacion>.Update.Set(c => c.Favorito, favorito);
+                var result = await _conversacionesCollection.UpdateOneAsync(filter, update);
+
+                return result.ModifiedCount > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar estado de favorito para conversación con ID: {Id}", id);
+                throw;
             }
         }
     }

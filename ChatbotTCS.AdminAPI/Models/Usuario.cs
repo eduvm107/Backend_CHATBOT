@@ -6,7 +6,9 @@ namespace ChatbotTCS.AdminAPI.Models
     /// <summary>
     /// Modelo para usuarios del sistema
     /// </summary>
+    experimental/refactor-ollama
     /// 
+     master
     [BsonIgnoreExtraElements]
     public class Usuario
     {
@@ -258,11 +260,26 @@ namespace ChatbotTCS.AdminAPI.Models
         /// </summary>
         [BsonElement("rol")]
         public string Rol { get; set; } = "Usuario";
+
+        /// <summary>
+        /// Token para restablecer contraseña
+        /// </summary>
+        [BsonElement("resetPasswordToken")]
+        [BsonIgnoreIfNull]
+        public string? ResetPasswordToken { get; set; }
+
+        /// <summary>
+        /// Fecha de expiración del token de restablecimiento
+        /// </summary>
+        [BsonElement("resetPasswordExpires")]
+        [BsonIgnoreIfNull]
+        public DateTime? ResetPasswordExpires { get; set; }
     }
 
     /// <summary>
     /// Clase para la dirección del usuario
     /// </summary>
+    [BsonIgnoreExtraElements]
     public class Direccion
     {
         [BsonElement("calle")]
@@ -284,6 +301,7 @@ namespace ChatbotTCS.AdminAPI.Models
     /// <summary>
     /// Clase para la información del supervisor
     /// </summary>
+    [BsonIgnoreExtraElements]
     public class Supervisor
     {
         [BsonElement("nombre")]
@@ -302,6 +320,7 @@ namespace ChatbotTCS.AdminAPI.Models
     /// <summary>
     /// Clase para las preferencias del usuario
     /// </summary>
+    [BsonIgnoreExtraElements]
     public class Preferencias
     {
         [BsonElement("notificaciones")]
@@ -323,6 +342,7 @@ namespace ChatbotTCS.AdminAPI.Models
     /// <summary>
     /// Clase para las estadísticas del usuario
     /// </summary>
+    [BsonIgnoreExtraElements]
     public class Estadisticas
     {
         [BsonElement("mensajesEnviados")]
@@ -341,5 +361,17 @@ namespace ChatbotTCS.AdminAPI.Models
         [BsonElement("satisfaccionPromedio")]
         [BsonIgnoreIfNull]
         public double? SatisfaccionPromedio { get; set; }
+
+        [BsonElement("contraseña")]
+        public string Contrasena { get; set; } = string.Empty;
+
+        [BsonElement("rol")]
+        public string Rol { get; set; } = "Usuario";
+
+        [BsonElement("favoritosDocumentos")]
+        public List<string> FavoritosDocumentos { get; set; } = new();
+
+        [BsonElement("favoritosActividades")]
+        public List<string> FavoritosActividades { get; set; } = new();
     }
 }
