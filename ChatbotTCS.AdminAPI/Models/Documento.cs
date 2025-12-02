@@ -27,7 +27,7 @@ namespace ChatbotTCS.AdminAPI.Models
         /// </summary>
         [BsonElement("descripcion")]
         public string Descripcion { get; set; } = string.Empty;
-        ////
+
         /// <summary>
         /// URL del documento
         /// </summary>
@@ -138,8 +138,5 @@ namespace ChatbotTCS.AdminAPI.Models
         /// </summary>
         [BsonElement("valoracion")]
         public int Valoracion { get; set; } = 0;
-
-        [BsonElement("favorito")]
-        public bool favorito { get; set; } = false;
     }
 }
