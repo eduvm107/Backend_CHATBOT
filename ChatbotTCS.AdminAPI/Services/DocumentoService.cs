@@ -268,8 +268,24 @@ namespace ChatbotTCS.AdminAPI.Services
             {
                 _logger.LogInformation("Buscando {Count} documentos por IDs", ids.Count);
 
-                // El filtro $in selecciona todos los documentos donde el campo 'Id' coincide con cualquiera de los IDs en la lista
-                var filter = Builders<Documento>.Filter.In(d => d.Id, ids);
+                // Convertir los IDs de string a ObjectId para buscar correctamente en MongoDB
+                var objectIds = ids
+                    .Where(id => ObjectId.TryParse(id, out _))  // Filtrar solo IDs válidos
+                    .Select(id => ObjectId.Parse(id))
+                    .ToList();
+
+                if (objectIds.Count == 0)
+                {
+                    _logger.LogWarning("No se encontraron IDs válidos para buscar documentos");
+                    return new List<Documento>();
+                }
+
+                _logger.LogInformation("Convertidos {Count} IDs válidos a ObjectId", objectIds.Count);
+
+                // Buscar usando BsonDocument para filtrar por _id (que es ObjectId en MongoDB)
+                var filterBuilder = Builders<Documento>.Filter;
+                var filter = filterBuilder.In("_id", objectIds);
+                
                 return await _documentosCollection.Find(filter).ToListAsync();
             }
             catch (Exception ex)

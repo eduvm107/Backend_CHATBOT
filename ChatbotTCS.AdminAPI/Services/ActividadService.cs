@@ -237,7 +237,24 @@ namespace ChatbotTCS.AdminAPI.Services
             {
                 _logger.LogInformation("Buscando {Count} actividades por IDs", ids.Count);
 
-                var filter = Builders<Actividad>.Filter.In(a => a.Id, ids);
+                // Convertir los IDs de string a ObjectId para buscar correctamente en MongoDB
+                var objectIds = ids
+                    .Where(id => ObjectId.TryParse(id, out _))  // Filtrar solo IDs válidos
+                    .Select(id => ObjectId.Parse(id))
+                    .ToList();
+
+                if (objectIds.Count == 0)
+                {
+                    _logger.LogWarning("No se encontraron IDs válidos para buscar actividades");
+                    return new List<Actividad>();
+                }
+
+                _logger.LogInformation("Convertidos {Count} IDs válidos a ObjectId", objectIds.Count);
+
+                // Buscar usando BsonDocument para filtrar por _id (que es ObjectId en MongoDB)
+                var filterBuilder = Builders<Actividad>.Filter;
+                var filter = filterBuilder.In("_id", objectIds);
+                
                 return await _actividadesCollection.Find(filter).ToListAsync();
             }
             catch (Exception ex)
