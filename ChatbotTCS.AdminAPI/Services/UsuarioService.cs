@@ -12,13 +12,24 @@ namespace ChatbotTCS.AdminAPI.Services
     {
         private readonly IMongoCollection<Usuario> _usuariosCollection;
         private readonly ILogger<UsuarioService> _logger;
+        private readonly DocumentoService _documentoService;
+        private readonly ActividadService _actividadService;
+        private readonly ConversacionService _conversacionService;
 
         /// <summary>
-        /// Constructor del servicio
+        /// Constructor del servicio con inyección de dependencias
         /// </summary>
-        public UsuarioService(IOptions<MongoDBSettings> settings, ILogger<UsuarioService> logger)
+        public UsuarioService(
+            IOptions<MongoDBSettings> settings, 
+            ILogger<UsuarioService> logger,
+            DocumentoService documentoService,
+            ActividadService actividadService,
+            ConversacionService conversacionService)
         {
             _logger = logger;
+            _documentoService = documentoService;
+            _actividadService = actividadService;
+            _conversacionService = conversacionService;
 
             try
             {
@@ -269,6 +280,141 @@ namespace ChatbotTCS.AdminAPI.Services
         }
 
         /// <summary>
+
+        /// Alterna el estado de favorito de un recurso (documento, actividad, chat) para un usuario.
+        /// Retorna true si se marcó como favorito, false si se desmarcó.
+        /// </summary>
+        public async Task<bool> ToggleFavoriteAsync(string usuarioId, string tipoRecurso, string recursoId)
+        {
+            try
+            {
+                _logger.LogInformation("Alternando favorito para usuario {UsuarioId}, tipo {TipoRecurso}, recurso {RecursoId}", 
+                    usuarioId, tipoRecurso, recursoId);
+
+                // 1. Identificar el array correcto según el tipo de recurso
+                string arrayToModify = tipoRecurso.ToLowerInvariant() switch
+                {
+                    "documento" => "favoritosDocumentos",
+                    "actividad" => "favoritosActividades",
+                    "chat" => "favoritosChat",
+                    _ => throw new ArgumentException($"Tipo de recurso '{tipoRecurso}' no soportado para favoritos.")
+                };
+
+                var filter = Builders<Usuario>.Filter.Eq(u => u.Id, usuarioId);
+                
+                // 2. Intentar QUITAR el recurso (Desmarcar) usando $pull
+                var pullUpdate = Builders<Usuario>.Update.Pull(arrayToModify, recursoId);
+                var pullResult = await _usuariosCollection.UpdateOneAsync(filter, pullUpdate);
+
+                if (pullResult.ModifiedCount > 0)
+                {
+                    // Se removió el favorito
+                    _logger.LogInformation("Recurso {RecursoId} desmarcado como favorito", recursoId);
+                    return false;
+                }
+                else
+                {
+                    // 3. Si no se removió, entonces AGREGAR (Marcar) usando $addToSet
+                    var pushUpdate = Builders<Usuario>.Update.AddToSet(arrayToModify, recursoId);
+                    var pushResult = await _usuariosCollection.UpdateOneAsync(filter, pushUpdate);
+                    
+                    if (pushResult.ModifiedCount > 0)
+                    {
+                        _logger.LogInformation("Recurso {RecursoId} marcado como favorito", recursoId);
+                        return true;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No se pudo modificar favoritos para usuario {UsuarioId}", usuarioId);
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al alternar favorito para usuario {UsuarioId}", usuarioId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todos los recursos favoritos de un usuario (documentos, actividades y chats).
+        /// Retorna una lista unificada de RecursoFavorito.
+        /// </summary>
+        public async Task<List<RecursoFavorito>> GetMisFavoritosAsync(string usuarioId)
+        {
+            try
+            {
+                _logger.LogInformation("Obteniendo favoritos para usuario {UsuarioId}", usuarioId);
+
+                var usuario = await GetByIdAsync(usuarioId);
+                if (usuario == null)
+                {
+                    _logger.LogWarning("Usuario no encontrado: {UsuarioId}", usuarioId);
+                    return new List<RecursoFavorito>();
+                }
+
+                var listaFavoritosFinal = new List<RecursoFavorito>();
+
+                // 1. Extraer IDs de los tres arrays
+                var docIds = usuario.favoritosDocumentos ?? new List<string>();
+                var actIds = usuario.favoritosActividades ?? new List<string>();
+                var chatIds = usuario.FavoritosChat ?? new List<string>();
+
+                // 2. Consultar y mapear Documentos Favoritos
+                if (docIds.Any())
+                {
+                    var documentos = await _documentoService.FindByIdsAsync(docIds);
+                    listaFavoritosFinal.AddRange(documentos.Select(doc => new RecursoFavorito
+                    {
+                        Id = doc.Id,
+                        Tipo = "documento",
+                        Titulo = doc.Titulo,
+                        Descripcion = doc.Descripcion,
+                        Url = doc.Url,
+                        FechaRelevante = doc.FechaPublicacion
+                    }));
+                }
+
+                // 3. Consultar y mapear Actividades Favoritas
+                if (actIds.Any())
+                {
+                    var actividades = await _actividadService.FindByIdsAsync(actIds);
+                    listaFavoritosFinal.AddRange(actividades.Select(act => new RecursoFavorito
+                    {
+                        Id = act.Id,
+                        Tipo = "actividad",
+                        Titulo = act.Titulo,
+                        Descripcion = act.Descripcion,
+                        Url = null,
+                        FechaRelevante = act.FechaDeActividad
+                    }));
+                }
+
+                // 4. Consultar y mapear Chats Favoritos usando el método de ConversacionService
+                var chatsFavoritos = await _conversacionService.GetFavoritosByUsuarioAsync(usuarioId);
+                if (chatsFavoritos.Any())
+                {
+                    listaFavoritosFinal.AddRange(chatsFavoritos.Select(chat => new RecursoFavorito
+                    {
+                        Id = chat.Id,
+                        Tipo = "chat",
+                        Titulo = $"Conversación - {chat.FechaInicio:dd MMM yyyy}",
+                        Descripcion = chat.Mensajes.FirstOrDefault()?.Contenido ?? "Conversación sin mensajes",
+                        Url = null,
+                        FechaRelevante = chat.FechaUltimaMensaje
+                    }));
+                }
+
+                _logger.LogInformation("Se encontraron {Count} favoritos para usuario {UsuarioId}", 
+                    listaFavoritosFinal.Count, usuarioId);
+
+                return listaFavoritosFinal;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener favoritos para usuario {UsuarioId}", usuarioId);
+
         /// Busca un usuario por token de restablecimiento de contraseña
         /// </summary>
         public async Task<Usuario?> GetByResetTokenAsync(string token)
@@ -283,6 +429,7 @@ namespace ChatbotTCS.AdminAPI.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al buscar usuario por token de restablecimiento");
+
                 throw;
             }
         }
