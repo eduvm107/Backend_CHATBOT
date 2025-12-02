@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using ChatbotTCS.AdminAPI.Models;
 
@@ -7,26 +8,33 @@ namespace ChatbotTCS.AdminAPI.Services
     public class OllamaService2
     {
         private readonly HttpClient _httpClient;
-        private readonly string _baseUrl;
-        private readonly string _embeddingModel;
-        private readonly string _chatModel;
+
+        // Configuración Híbrida:
+        private readonly string _localOllamaUrl = "http://localhost:11434"; // Embeddings siempre locales
+        private readonly string _localEmbeddingModel = "mxbai-embed-large";
+
+        // Configuración Groq:
+        private readonly string _groqUrl;
+        private readonly string _groqApiKey;
+        private readonly string _groqModel;
 
         public OllamaService2(HttpClient httpClient, IConfiguration config)
         {
             _httpClient = httpClient;
 
-            // Leemos la configuración específica "OllamaRAG" del appsettings.json
-            _baseUrl = config["OllamaRAG:BaseUrl"] ?? "http://localhost:11434";
-            _embeddingModel = config["OllamaRAG:EmbeddingModel"] ?? "mxbai-embed-large";
-            _chatModel = config["OllamaRAG:ChatModel"] ?? "llama3.2";
+            // Leemos de appsettings
+            _groqUrl = config["OllamaRAG:BaseUrl"] ?? "https://api.groq.com/openai/v1";
+            _groqApiKey = config["OllamaRAG:ApiKey"] ?? ""; // ¡Asegúrate de ponerla en el JSON!
+            _groqModel = config["OllamaRAG:ChatModel"] ?? "llama3-8b-8192";
         }
 
         // 1. MÉTODO: Generar Embeddings (Vectorizar texto para búsqueda)
+        // ESTE SIGUE USANDO TU OLLAMA LOCAL (Rápido y Gratis)
         public async Task<double[]> GetEmbeddingAsync(string text)
         {
-            var request = new EmbeddingRequest
+            var request = new
             {
-                model = _embeddingModel,
+                model = _localEmbeddingModel,
                 prompt = text.Replace("\n", " ")
             };
 
@@ -34,103 +42,89 @@ namespace ChatbotTCS.AdminAPI.Services
 
             try
             {
-                var response = await _httpClient.PostAsync($"{_baseUrl}/api/embeddings", jsonContent);
+                // Apuntamos siempre al Localhost para embeddings
+                var response = await _httpClient.PostAsync($"{_localOllamaUrl}/api/embeddings", jsonContent);
                 response.EnsureSuccessStatusCode();
 
                 var jsonResponse = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<EmbeddingResponse>(jsonResponse);
 
-                return result?.embedding ?? Array.Empty<double>();
+                // Usamos JsonDocument para mayor flexibilidad
+                using var doc = JsonDocument.Parse(jsonResponse);
+                var embeddingElement = doc.RootElement.GetProperty("embedding");
+                return JsonSerializer.Deserialize<double[]>(embeddingElement.GetRawText());
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error en Embedding ({_embeddingModel}): {ex.Message}");
+                Console.WriteLine($"Error en Embedding ({_localEmbeddingModel}): {ex.Message}");
                 return Array.Empty<double>();
             }
         }
 
-        // 2. MÉTODO: Chat Estándar 
+        // 2. MÉTODO: Chat Estándar (AHORA USA GROQ) 🚀
         public async Task<string> ChatAsync(string promptSistema, string preguntaUsuario)
         {
-            var request = new ChatRequest
+            // Validaciones de seguridad para Groq
+            var sistema = string.IsNullOrWhiteSpace(promptSistema) ? "Eres un asistente útil." : promptSistema;
+            var usuario = string.IsNullOrWhiteSpace(preguntaUsuario) ? "Hola" : preguntaUsuario;
+
+            // Formato compatible con OpenAI/Groq
+            var requestBody = new
             {
-                model = _chatModel,
-                messages = new List<Message>
+                model = _groqModel,
+                messages = new[]
                 {
-                    new Message { role = "system", content = promptSistema },
-                    new Message { role = "user", content = preguntaUsuario }
+                    new { role = "system", content = sistema },
+                    new { role = "user", content = usuario }
                 },
-                stream = false
+                temperature = 0.5 // Creatividad balanceada
             };
 
-            var jsonContent = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+            var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+            // Creamos la petición HTTP apuntando a Groq
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{_groqUrl}/chat/completions");
+            request.Content = jsonContent;
+
+            // ¡IMPORTANTE! Aquí va tu clave API de Groq
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _groqApiKey);
 
             try
             {
-                var response = await _httpClient.PostAsync($"{_baseUrl}/api/chat", jsonContent);
-                response.EnsureSuccessStatusCode();
+                var response = await _httpClient.SendAsync(request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return $"Error Groq: {response.StatusCode} - {errorContent}";
+                }
 
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var result = JsonSerializer.Deserialize<ChatResponse>(jsonResponse, options);
+                // Parseamos la respuesta de Groq
+                using var doc = JsonDocument.Parse(jsonResponse);
+                var content = doc.RootElement
+                    .GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString();
 
-                return result?.message?.content ?? "Lo siento, no pude conectar con la IA.";
+                return content ?? "Sin respuesta de Groq.";
             }
             catch (Exception ex)
             {
-                return $"Error en Chat ({_chatModel}): {ex.Message}";
+                return $"Error de Conexión Groq: {ex.Message}";
             }
         }
 
-        // 3. MÉTODO: Chat con Streaming (Respuesta en tiempo real para el usuario)
-        public async IAsyncEnumerable<string> ChatStreamAsync(string promptSistema, string preguntaUsuario)
+        // 3. MÉTODO: Chat con Streaming (DESHABILITADO PARA GROQ POR AHORA)
+        // Lo dejamos lanzando excepción para evitar errores si el controlador intenta usarlo
+        public IAsyncEnumerable<string> ChatStreamAsync(string promptSistema, string preguntaUsuario)
         {
-            var request = new ChatRequest
-            {
-                model = _chatModel,
-                messages = new List<Message>
-                {
-                    new Message { role = "system", content = promptSistema },
-                    new Message { role = "user", content = preguntaUsuario }
-                },
-                stream = true // <--- Activa el modo flujo de datos
-            };
-
-            var jsonContent = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
-
-            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/api/chat") { Content = jsonContent };
-            // ResponseHeadersRead evita esperar a que se descargue todo el contenido
-            using var response = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead);
-
-            response.EnsureSuccessStatusCode();
-
-            using var stream = await response.Content.ReadAsStreamAsync();
-            using var reader = new StreamReader(stream);
-
-            while (!reader.EndOfStream)
-            {
-                var line = await reader.ReadLineAsync();
-                if (string.IsNullOrWhiteSpace(line)) continue;
-
-                ChatResponse? json = null;
-                try
-                {
-                    json = JsonSerializer.Deserialize<ChatResponse>(line);
-                }
-                catch
-                {
-                    // Ignoramos líneas corruptas o incompletas
-                }
-
-                if (!string.IsNullOrEmpty(json?.message?.content))
-                {
-                    yield return json.message.content;
-                }
-            }
+            throw new NotImplementedException("El streaming con Groq requiere otra implementación. Usa el modo normal.");
         }
 
-        // 4. MÉTODO: Clasificador de Intenciones (El "Policía de Tráfico")
+        // 4. MÉTODO: Clasificador de Intenciones (TU LÓGICA ORIGINAL)
+        // Sigue usando IA, pero ahora es rapidísimo porque usa Groq
         public async Task<string> ClasificarIntencionAsync(string preguntaUsuario)
         {
             var promptClasificador = @"
@@ -145,10 +139,10 @@ namespace ChatbotTCS.AdminAPI.Services
         
                 Responde SOLO con la palabra clave (ACTIVIDAD, RECURSO, CONSULTA o SALUDO). No añadas puntuación ni explicaciones.";
 
-            // Usamos ChatAsync normal porque queremos una respuesta única y rápida
+            // Llamamos a ChatAsync (que ahora es Groq)
             var respuesta = await ChatAsync(promptClasificador, preguntaUsuario);
 
-            // Limpiamos la respuesta para asegurar que sea solo la palabra clave
+            // Limpiamos la respuesta
             return respuesta.Trim().ToUpper().Replace(".", "");
         }
     }

@@ -438,7 +438,38 @@ namespace ChatbotTCS.AdminAPI.Services
             }
         }
 
-    } 
+        // ==========================================
+        //  MÉTODOS EXCLUSIVOS PARA EL CHATBOT (RAG)
+        // ==========================================
+
+        /// <summary>
+        /// Método exclusivo para que el Chatbot busque usuarios sin afectar la lógica principal.
+        /// </summary>
+        public async Task<Usuario?> GetUsuarioParaChatAsync(string id)
+        {
+            try
+            {
+                _logger.LogInformation("Obteniendo usuario con ID: {Id}", id);
+
+                if (!ObjectId.TryParse(id, out _))
+                {
+                    _logger.LogWarning("ID inválido: {Id}", id);
+                    return null;
+                }
+
+                var filter = Builders<Usuario>.Filter.Eq(u => u.Id, id);
+                return await _usuariosCollection.Find(filter).FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener usuario con ID: {Id}", id);
+                throw;
+            }
+        }
+
+       
+
+
 
 
         /// <summary>

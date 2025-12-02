@@ -1,5 +1,5 @@
 ﻿using ChatbotTCS.AdminAPI.Services;
-using ChatbotTCS.AdminAPI.Models; 
+using ChatbotTCS.AdminAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 
@@ -39,12 +39,13 @@ namespace ChatbotTCS.AdminAPI.Controllers
                 return BadRequest("Error: Necesito tu ID de usuario.");
 
             // 1. OBTENER USUARIO
-            var usuario = await _usuarioService.GetByIdAsync(usuarioId);
+            var usuario = await _usuarioService.GetUsuarioParaChatAsync(usuarioId);
+            
             if (usuario == null) return NotFound("Usuario no encontrado.");
             string nombre = usuario.Nombre;
 
             // 2. GESTIÓN DE HISTORIAL (INICIO)
-        
+
             var conversacion = await _conversacionService.ObtenerConversacionActivaAsync(usuarioId);
 
             // B. Guardar pregunta del usuario
@@ -129,7 +130,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
             }
 
             // 5. GENERAR RESPUESTA (
-           
+
             respuestaFinal = await _ollamaService.ChatAsync(promptSistema, pregunta);
 
             // 6. GUARDAR RESPUESTA DEL BOT
@@ -138,7 +139,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
                 Tipo = "bot",
                 Contenido = respuestaFinal,
                 Timestamp = DateTime.UtcNow,
-                IntencionDetectada = intencion 
+                IntencionDetectada = intencion
             };
             await _conversacionService.AddMensajeAsync(conversacion.Id!, msjBot);
 
