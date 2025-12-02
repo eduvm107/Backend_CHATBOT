@@ -227,5 +227,31 @@ namespace ChatbotTCS.AdminAPI.Services
                 throw;
             }
         }
+        // Agrega este método dentro de ActividadService.cs
+
+        /// <summary>
+        /// Obtiene actividades específicas de un usuario
+        /// </summary>
+        // En ActividadService.cs
+
+        public async Task<List<Actividad>> GetByUsuarioIdAsync(string usuarioId)
+        {
+            try
+            {
+                _logger.LogInformation("Buscando actividades para el usuario: {UsuarioId}", usuarioId);
+
+                var filter = Builders<Actividad>.Filter.Eq(a => a.UsuarioId, usuarioId);
+
+                // CORRECCIÓN: Usamos 'FechaDeActividad' (el nombre original de tu compañero)
+                var sort = Builders<Actividad>.Sort.Ascending(a => a.FechaDeActividad);
+
+                return await _actividadesCollection.Find(filter).Sort(sort).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener actividades del usuario: {UsuarioId}", usuarioId);
+                return new List<Actividad>();
+            }
+        }
     }
 }

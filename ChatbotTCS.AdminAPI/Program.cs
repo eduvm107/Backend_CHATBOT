@@ -7,6 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<MongoDBSettings>(
     builder.Configuration.GetSection("MongoDB"));
 
+// Asegúrate de que esto esté en Program.cs
+builder.Services.AddScoped<ChatbotTCS.AdminAPI.Services.ActividadService>();
+
 // --- NUEVOS SERVICIOS (RAG) ---
 // Registramos OllamaService2 para usar la config "OllamaRAG"
 builder.Services.AddHttpClient<ChatbotTCS.AdminAPI.Services.OllamaService2>();
