@@ -339,7 +339,9 @@ namespace ChatbotTCS.AdminAPI.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al generar historial de texto");
-                return ""; // Si falla, devolvemos vacío para no romper el chat
+                return "";
+            }
+        }// Si falla, devolvemos vacío para no romper el chat
 
         /// Actualiza el estado de favorito de una conversación
         /// </summary>
