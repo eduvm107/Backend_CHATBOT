@@ -22,6 +22,16 @@ namespace ChatbotTCS.AdminAPI.Models
     }
 
     /// <summary>
+    /// Modelo para la solicitud de recuperación de contraseña (recover-password)
+    /// </summary>
+    public class RecoverPasswordRequest
+    {
+        [Required(ErrorMessage = "El email es requerido")]
+        [EmailAddress(ErrorMessage = "El formato del email no es válido")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    /// <summary>
     /// Modelo para la solicitud de olvido de contrase�a
     /// </summary>
     public class ForgotPasswordRequest
@@ -131,6 +141,11 @@ namespace ChatbotTCS.AdminAPI.Models
         /// Nombre del usuario
         /// </summary>
         public string Nombre { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Teléfono del usuario
+        /// </summary>
+        public string? Telefono { get; set; }
 
         /// <summary>
         /// Departamento del usuario

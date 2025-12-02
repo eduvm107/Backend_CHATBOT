@@ -51,7 +51,13 @@ builder.Services.AddSingleton<IOllamaService>(serviceProvider =>
 });
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Configurar para usar camelCase en JSON (compatibilidad con frontend Android/Kotlin)
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
 
 // Configurar CORS para desarrollo
 builder.Services.AddCors(options =>

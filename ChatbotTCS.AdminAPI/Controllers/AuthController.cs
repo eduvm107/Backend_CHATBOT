@@ -103,6 +103,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
                         Email = usuario.Email,
                         NombreCompleto = usuario.NombreCompleto,
                         Nombre = usuario.Nombre,
+                        Telefono = usuario.Telefono,
                         Departamento = usuario.Departamento,
                         Puesto = usuario.Puesto,
                         Activo = usuario.Activo,
@@ -119,6 +120,49 @@ namespace ChatbotTCS.AdminAPI.Controllers
             {
                 _logger.LogError(ex, "Error interno en el login para email: {Email}", request.Email);
                 return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
+        [HttpPost("recover-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> RecoverPassword([FromBody] RecoverPasswordRequest request)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.Email))
+                {
+                    _logger.LogWarning("Solicitud de recover-password sin email");
+                    return BadRequest(new { message = "Email es requerido" });
+                }
+
+                _logger.LogInformation("Solicitud de recover-password para email: {Email}", request.Email);
+
+                var usuario = await _usuarioService.GetByEmailAsync(request.Email);
+
+                if (usuario == null)
+                {
+                    _logger.LogWarning("No se encontro usuario para recover-password con email: {Email}", request.Email);
+                    return Ok(new { message = "Si el correo existe, recibiras un token de restablecimiento" });
+                }
+
+                var resetToken = GenerateSecureToken();
+
+                usuario.ResetPasswordToken = resetToken;
+                usuario.ResetPasswordExpires = DateTime.UtcNow.AddHours(1);
+                usuario.FechaActualizacion = DateTime.UtcNow;
+
+                await _usuarioService.UpdateAsync(usuario.Id!, usuario);
+
+                _logger.LogInformation("Se genero token de restablecimiento para email: {Email}, expira en 1 hora", request.Email);
+
+                return Ok(new { message = "Si el correo existe, recibiras un token de restablecimiento" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error procesando recover-password para email: {Email}", request?.Email);
+                return StatusCode(500, new { message = "Error al procesar la solicitud. Intenta nuevamente." });
             }
         }
 

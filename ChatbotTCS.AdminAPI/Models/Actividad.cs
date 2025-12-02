@@ -6,6 +6,7 @@ namespace ChatbotTCS.AdminAPI.Models
     /// <summary>
     /// Modelo para actividades de onboarding
     /// </summary>
+    [BsonIgnoreExtraElements]
     public class Actividad
     {
         /// <summary>
