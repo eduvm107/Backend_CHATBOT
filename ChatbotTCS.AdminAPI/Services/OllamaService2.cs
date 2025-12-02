@@ -1,6 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
-using ChatbotTCS.AdminAPI.Models; 
+using ChatbotTCS.AdminAPI.Models;
 
 namespace ChatbotTCS.AdminAPI.Services
 {
@@ -15,18 +15,18 @@ namespace ChatbotTCS.AdminAPI.Services
         {
             _httpClient = httpClient;
 
-            // Lee sección específica "OllamaRAG"
+            // Leemos la configuración específica "OllamaRAG" del appsettings.json
             _baseUrl = config["OllamaRAG:BaseUrl"] ?? "http://localhost:11434";
             _embeddingModel = config["OllamaRAG:EmbeddingModel"] ?? "mxbai-embed-large";
             _chatModel = config["OllamaRAG:ChatModel"] ?? "llama3.2";
         }
 
-        //  Método para Embeddings (Búsqueda)
+        // 1. MÉTODO: Generar Embeddings (Vectorizar texto para búsqueda)
         public async Task<double[]> GetEmbeddingAsync(string text)
         {
             var request = new EmbeddingRequest
             {
-                model = _embeddingModel, // Usa "mxbai-embed-large" desde config
+                model = _embeddingModel,
                 prompt = text.Replace("\n", " ")
             };
 
@@ -49,12 +49,12 @@ namespace ChatbotTCS.AdminAPI.Services
             }
         }
 
-        // 2. Método para Chat Normal (Sin Streaming) - para mensajes cortos o errores
+        // 2. MÉTODO: Chat Estándar (Sin Streaming - Para uso interno o mensajes cortos)
         public async Task<string> ChatAsync(string promptSistema, string preguntaUsuario)
         {
             var request = new ChatRequest
             {
-                model = _chatModel, // Usa "llama3.2" desde config
+                model = _chatModel,
                 messages = new List<Message>
                 {
                     new Message { role = "system", content = promptSistema },
@@ -83,7 +83,7 @@ namespace ChatbotTCS.AdminAPI.Services
             }
         }
 
-        // 3.  MÉTODO: Chat con Streaming (Respuesta gota a gota)
+        // 3. MÉTODO: Chat con Streaming (Respuesta en tiempo real para el usuario)
         public async IAsyncEnumerable<string> ChatStreamAsync(string promptSistema, string preguntaUsuario)
         {
             var request = new ChatRequest
@@ -94,13 +94,13 @@ namespace ChatbotTCS.AdminAPI.Services
                     new Message { role = "system", content = promptSistema },
                     new Message { role = "user", content = preguntaUsuario }
                 },
-                stream = true // <--- Esto activa el modo rápido
+                stream = true // <--- Activa el modo flujo de datos
             };
 
             var jsonContent = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
 
-            // Usamos SendAsync con ResponseHeadersRead para no esperar a que termine todo el texto
             using var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/api/chat") { Content = jsonContent };
+            // ResponseHeadersRead evita esperar a que se descargue todo el contenido
             using var response = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead);
 
             response.EnsureSuccessStatusCode();
@@ -108,29 +108,48 @@ namespace ChatbotTCS.AdminAPI.Services
             using var stream = await response.Content.ReadAsStreamAsync();
             using var reader = new StreamReader(stream);
 
-            // Reemplaza el bloque while en ChatStreamAsync para evitar yield dentro de try-catch
             while (!reader.EndOfStream)
             {
                 var line = await reader.ReadLineAsync();
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
-                ChatResponse json = null;
+                ChatResponse? json = null;
                 try
                 {
-                    // Ollama envía cada palabra en un JSON separado
                     json = JsonSerializer.Deserialize<ChatResponse>(line);
                 }
                 catch
                 {
-                    // Ignora errores de deserialización
+                    // Ignoramos líneas corruptas o incompletas
                 }
 
-                // Si hay contenido, lo devolvemos inmediatamente
                 if (!string.IsNullOrEmpty(json?.message?.content))
                 {
                     yield return json.message.content;
                 }
             }
+        }
+
+        // 4. MÉTODO: Clasificador de Intenciones (El "Policía de Tráfico")
+        public async Task<string> ClasificarIntencionAsync(string preguntaUsuario)
+        {
+            var promptClasificador = @"
+                Eres un clasificador de intenciones para un chatbot corporativo de TCS.
+                Analiza la pregunta y responde ÚNICAMENTE con una de estas palabras clave:
+        
+                - ACTIVIDAD: Si el usuario pregunta por su agenda, horario, reuniones, 'qué tengo hoy', fechas o tareas pendientes.
+                - PERFIL: Preguntas sobre datos personales del usuario: 'quién es mi supervisor', 'mi jefe', 'mi correo', 'mi puesto', 'mi fecha de ingreso'.
+                - RECURSO: El usuario pide explícitamente un archivo, enlace, link, manual, documento, pdf o video. (Ej: 'pásame el link', 'quiero descargar el manual', 'dónde está el formulario').
+                - CONSULTA: Preguntas generales donde el usuario quiere una EXPLICACIÓN o respuesta teórica sobre la empresa (Ej: 'cómo me visto', 'cuántos días de vacaciones tengo', 'qué es el código de conducta').
+                - SALUDO: Saludos, despedidas o agradecimientos simples.
+        
+                Responde SOLO con la palabra clave (ACTIVIDAD, RECURSO, CONSULTA o SALUDO). No añadas puntuación ni explicaciones.";
+
+            // Usamos ChatAsync normal porque queremos una respuesta única y rápida
+            var respuesta = await ChatAsync(promptClasificador, preguntaUsuario);
+
+            // Limpiamos la respuesta para asegurar que sea solo la palabra clave
+            return respuesta.Trim().ToUpper().Replace(".", "");
         }
     }
 }

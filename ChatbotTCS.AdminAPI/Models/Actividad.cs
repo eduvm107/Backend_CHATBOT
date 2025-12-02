@@ -165,5 +165,14 @@ namespace ChatbotTCS.AdminAPI.Models
         /// </summary>
         [BsonElement("fecha_de_actividad")]
         public DateTime FechaDeActividad { get; set; }
+
+
+        // Agrega el campo usuarioId para poder filtrar
+        [BsonElement("usuarioId")] // O el nombre que tenga en tu BD
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string UsuarioId { get; set; }
+        [BsonElement("favorito")]
+        public bool Favorito { get; set; }
+
     }
 }

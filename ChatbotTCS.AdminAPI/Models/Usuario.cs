@@ -6,6 +6,9 @@ namespace ChatbotTCS.AdminAPI.Models
     /// <summary>
     /// Modelo para usuarios del sistema
     /// </summary>
+    experimental/refactor-ollama
+    /// 
+     master
     [BsonIgnoreExtraElements]
     public class Usuario
     {
