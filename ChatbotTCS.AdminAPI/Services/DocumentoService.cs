@@ -264,6 +264,8 @@ namespace ChatbotTCS.AdminAPI.Services
             {
                 _logger.LogError(ex, "Error al buscar recursos para el chatbot");
                 return new List<Documento>();
+            }
+        }
         /// <summary>
         /// Actualiza el estado de favorito de un documento
         /// </summary>

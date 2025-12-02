@@ -140,6 +140,6 @@ namespace ChatbotTCS.AdminAPI.Models
         public int Valoracion { get; set; } = 0;
 
         [BsonElement("favorito")]
-        public bool Favorito { get; set; } = false;
+        public bool favorito { get; set; } = false;
     }
 }
