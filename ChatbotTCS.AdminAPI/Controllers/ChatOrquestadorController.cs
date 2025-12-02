@@ -1,4 +1,4 @@
-﻿using ChatbotTCS.AdminAPI.Services;
+using ChatbotTCS.AdminAPI.Services;
 using ChatbotTCS.AdminAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
@@ -108,7 +108,12 @@ namespace ChatbotTCS.AdminAPI.Controllers
                 case "CONSULTA":
                 default:
                     var vector = await _ollamaService.GetEmbeddingAsync(pregunta);
-                    var resultados = await _ragService.SearchAsync(vector);
+                    var resultados = new List<KnowledgeBase>();
+
+                    if (vector != null && vector.Length > 0)
+                    {
+                        resultados = await _ragService.SearchAsync(vector);
+                    }
 
                     if (resultados.Count > 0 && resultados.First().Score >= 0.80)
                         contextoDatos = string.Join("\n\n", resultados.Select(r => r.Content));
@@ -121,7 +126,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
                         CONTEXTO OFICIAL: {contextoDatos}
                         
                         INSTRUCCIONES:
-                        1. Si el contexto es 'NO_INFO', discúlpate y di que no sabes NO DES RECOMENDACIONES.
+                        1. Si el contexto es 'NO_INFO', disc£lpate y di que no sabes NO DES RECOMENDACIONES.
                         2. Responde usando SOLO el contexto oficial.
                         3. NO inventes nada y ni trates de responder.
                         4. Usa el historial para entender el hilo de la conversacion.

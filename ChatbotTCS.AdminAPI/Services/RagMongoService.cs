@@ -1,4 +1,4 @@
-﻿using ChatbotTCS.AdminAPI.Models; // Asegúrate de tener tus modelos aquí
+using ChatbotTCS.AdminAPI.Models; // Asegúrate de tener tus modelos aquí
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -17,7 +17,7 @@ namespace ChatbotTCS.AdminAPI.Services
             var client = new MongoClient(connectionString);
             var database = client.GetDatabase(databaseName);
 
-            // Coneccion colección específica
+            // Conexión colección específica
             _collection = database.GetCollection<KnowledgeBase>("documentsEmbedding");
         }
 
@@ -30,6 +30,21 @@ namespace ChatbotTCS.AdminAPI.Services
         // Buscar similitudes (Vector Search)
         public async Task<List<KnowledgeBase>> SearchAsync(double[] queryVector, int limit = 3)
         {
+            // Dimensiones esperadas del índice vectorial en MongoDB (según configuración del índice)
+            const int ExpectedDimensions = 1024;
+
+            if (queryVector == null)
+            {
+                throw new ArgumentNullException(nameof(queryVector), "El vector de consulta no puede ser null.");
+            }
+
+            if (queryVector.Length != ExpectedDimensions)
+            {
+                throw new ArgumentException(
+                    $"El vector de consulta debe tener {ExpectedDimensions} dimensiones, pero tiene {queryVector.Length}.",
+                    nameof(queryVector));
+            }
+
             // Nombre del índice en Atlas "vector_index"
             var indexName = "vector_index";
 
