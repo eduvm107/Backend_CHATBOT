@@ -7,6 +7,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<MongoDBSettings>(
     builder.Configuration.GetSection("MongoDB"));
 
+// --- NUEVOS SERVICIOS (RAG) ---
+// Registramos OllamaService2 para usar la config "OllamaRAG"
+builder.Services.AddHttpClient<ChatbotTCS.AdminAPI.Services.OllamaService2>();
+
+// Registramos RagMongoService como Singleton (o Scoped)
+builder.Services.AddSingleton<ChatbotTCS.AdminAPI.Services.RagMongoService>();
+
 // Registrar todos los servicios como Singleton
 builder.Services.AddSingleton<MongoDBService>();
 builder.Services.AddSingleton<MensajeAutomaticoService>();
