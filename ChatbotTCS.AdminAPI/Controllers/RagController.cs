@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using ChatbotTCS.AdminAPI.Models;
 using ChatbotTCS.AdminAPI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -42,7 +42,12 @@ namespace ChatbotTCS.AdminAPI.Controllers
         public async Task<IActionResult> ChatNormal([FromQuery] string pregunta)
         {
             var vectorPregunta = await _ollamaService.GetEmbeddingAsync(pregunta);
-            var resultados = await _mongoService.SearchAsync(vectorPregunta);
+
+            var resultados = new List<KnowledgeBase>();
+            if (vectorPregunta != null && vectorPregunta.Length > 0)
+            {
+                resultados = await _mongoService.SearchAsync(vectorPregunta);
+            }
 
             // Filtro de seguridad
             if (resultados.Count == 0 || resultados.First().Score < 0.8)
@@ -75,7 +80,12 @@ namespace ChatbotTCS.AdminAPI.Controllers
         {
             Response.ContentType = "text/plain";
             var vectorPregunta = await _ollamaService.GetEmbeddingAsync(pregunta);
-            var resultados = await _mongoService.SearchAsync(vectorPregunta);
+
+            var resultados = new List<KnowledgeBase>();
+            if (vectorPregunta != null && vectorPregunta.Length > 0)
+            {
+                resultados = await _mongoService.SearchAsync(vectorPregunta);
+            }
 
             // Filtro de seguridad Streaming
             if (resultados.Count == 0 || resultados.First().Score < 0.8)
