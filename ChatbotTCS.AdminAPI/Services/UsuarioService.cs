@@ -280,7 +280,6 @@ namespace ChatbotTCS.AdminAPI.Services
         }
 
         /// <summary>
-
         /// Alterna el estado de favorito de un recurso (documento, actividad, chat) para un usuario.
         /// Retorna true si se marcó como favorito, false si se desmarcó.
         /// </summary>
@@ -291,43 +290,80 @@ namespace ChatbotTCS.AdminAPI.Services
                 _logger.LogInformation("Alternando favorito para usuario {UsuarioId}, tipo {TipoRecurso}, recurso {RecursoId}",
                     usuarioId, tipoRecurso, recursoId);
 
-                // 1. Identificar el array correcto según el tipo de recurso
-                string arrayToModify = tipoRecurso.ToLowerInvariant() switch
+                // Verificar que el usuario existe
+                var usuario = await GetByIdAsync(usuarioId);
+                if (usuario == null)
                 {
-                    "documento" => "favoritosDocumentos",
-                    "actividad" => "favoritosActividades",
-                    "chat" => "favoritosChat",
-                    _ => throw new ArgumentException($"Tipo de recurso '{tipoRecurso}' no soportado para favoritos.")
-                };
-
-                var filter = Builders<Usuario>.Filter.Eq(u => u.Id, usuarioId);
-
-                // 2. Intentar QUITAR el recurso (Desmarcar) usando $pull
-                var pullUpdate = Builders<Usuario>.Update.Pull(arrayToModify, recursoId);
-                var pullResult = await _usuariosCollection.UpdateOneAsync(filter, pullUpdate);
-
-                if (pullResult.ModifiedCount > 0)
-                {
-                    // Se removió el favorito
-                    _logger.LogInformation("Recurso {RecursoId} desmarcado como favorito", recursoId);
-                    return false;
+                    throw new ArgumentException($"Usuario con ID {usuarioId} no encontrado");
                 }
-                else
-                {
-                    // 3. Si no se removió, entonces AGREGAR (Marcar) usando $addToSet
-                    var pushUpdate = Builders<Usuario>.Update.AddToSet(arrayToModify, recursoId);
-                    var pushResult = await _usuariosCollection.UpdateOneAsync(filter, pushUpdate);
 
-                    if (pushResult.ModifiedCount > 0)
+                var tipoNormalizado = tipoRecurso.ToLowerInvariant();
+
+                // 1. Para documentos y actividades: modificar arrays en Usuario
+                if (tipoNormalizado == "documento" || tipoNormalizado == "actividad")
+                {
+                    string arrayToModify = tipoNormalizado == "documento" 
+                        ? "favoritosDocumentos" 
+                        : "favoritosActividades";
+
+                    var filter = Builders<Usuario>.Filter.Eq(u => u.Id, usuarioId);
+
+                    // Intentar QUITAR el recurso (Desmarcar) usando $pull
+                    var pullUpdate = Builders<Usuario>.Update.Pull(arrayToModify, recursoId);
+                    var pullResult = await _usuariosCollection.UpdateOneAsync(filter, pullUpdate);
+
+                    if (pullResult.ModifiedCount > 0)
                     {
-                        _logger.LogInformation("Recurso {RecursoId} marcado como favorito", recursoId);
-                        return true;
+                        // Se removió el favorito
+                        _logger.LogInformation("Recurso {RecursoId} desmarcado como favorito", recursoId);
+                        return false;
                     }
                     else
                     {
-                        _logger.LogWarning("No se pudo modificar favoritos para usuario {UsuarioId}", usuarioId);
-                        return false;
+                        // Si no se removió, entonces AGREGAR (Marcar) usando $addToSet
+                        var pushUpdate = Builders<Usuario>.Update.AddToSet(arrayToModify, recursoId);
+                        var pushResult = await _usuariosCollection.UpdateOneAsync(filter, pushUpdate);
+
+                        if (pushResult.ModifiedCount > 0)
+                        {
+                            _logger.LogInformation("Recurso {RecursoId} marcado como favorito", recursoId);
+                            return true;
+                        }
+                        else
+                        {
+                            _logger.LogWarning("No se pudo modificar favoritos para usuario {UsuarioId}", usuarioId);
+                            return false;
+                        }
                     }
+                }
+                // 2. Para chats/conversaciones: modificar el campo booleano "favorito" en la colección de conversaciones
+                else if (tipoNormalizado == "chat" || tipoNormalizado == "conversacion")
+                {
+                    // Obtener la conversación actual
+                    var conversacion = await _conversacionService.GetByIdAsync(recursoId);
+                    if (conversacion == null)
+                    {
+                        throw new ArgumentException($"Conversación con ID {recursoId} no encontrada");
+                    }
+
+                    // Verificar que la conversación pertenece al usuario
+                    if (conversacion.UsuarioId != usuarioId)
+                    {
+                        throw new ArgumentException($"La conversación {recursoId} no pertenece al usuario {usuarioId}");
+                    }
+
+                    // Alternar el estado de favorito
+                    bool nuevoEstado = !conversacion.Favorito;
+                    await _conversacionService.UpdateFavoritoAsync(recursoId, nuevoEstado);
+
+                    _logger.LogInformation("Conversación {RecursoId} {Estado} como favorita", 
+                        recursoId, nuevoEstado ? "marcada" : "desmarcada");
+
+                    return nuevoEstado;
+                }
+                else
+                {
+                    throw new ArgumentException($"Tipo de recurso '{tipoRecurso}' no soportado para favoritos. Valores válidos: documento, actividad, chat");
                 }
             }
             catch (Exception ex)
@@ -356,10 +392,9 @@ namespace ChatbotTCS.AdminAPI.Services
 
                 var listaFavoritosFinal = new List<RecursoFavorito>();
 
-                // 1. Extraer IDs de los tres arrays
+                // 1. Extraer IDs de documentos y actividades favoritos
                 var docIds = usuario.favoritosDocumentos ?? new List<string>();
                 var actIds = usuario.favoritosActividades ?? new List<string>();
-                var chatIds = usuario.FavoritosChat ?? new List<string>();
 
                 // 2. Consultar y mapear Documentos Favoritos
                 if (docIds.Any())
@@ -374,6 +409,7 @@ namespace ChatbotTCS.AdminAPI.Services
                         Url = doc.Url,
                         FechaRelevante = doc.FechaPublicacion
                     }));
+                    _logger.LogInformation("Se encontraron {Count} documentos favoritos", documentos.Count);
                 }
 
                 // 3. Consultar y mapear Actividades Favoritas
@@ -389,9 +425,10 @@ namespace ChatbotTCS.AdminAPI.Services
                         Url = null,
                         FechaRelevante = act.FechaDeActividad
                     }));
+                    _logger.LogInformation("Se encontraron {Count} actividades favoritas", actividades.Count);
                 }
 
-                // 4. Consultar y mapear Chats Favoritos usando el método de ConversacionService
+                // 4. Consultar conversaciones favoritas (basadas en el campo Favorito booleano)
                 var chatsFavoritos = await _conversacionService.GetFavoritosByUsuarioAsync(usuarioId);
                 if (chatsFavoritos.Any())
                 {
@@ -404,17 +441,17 @@ namespace ChatbotTCS.AdminAPI.Services
                         Url = null,
                         FechaRelevante = chat.FechaUltimaMensaje
                     }));
+                    _logger.LogInformation("Se encontraron {Count} conversaciones favoritas", chatsFavoritos.Count);
                 }
 
-                _logger.LogInformation("Se encontraron {Count} favoritos para usuario {UsuarioId}",
-                    listaFavoritosFinal.Count, usuarioId);
+                _logger.LogInformation("Total de favoritos encontrados: {Count} (Documentos: {DocCount}, Actividades: {ActCount}, Chats: {ChatCount})",
+                    listaFavoritosFinal.Count, docIds.Count, actIds.Count, chatsFavoritos.Count);
 
                 return listaFavoritosFinal;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener favoritos para usuario {UsuarioId}", usuarioId);
-
                 return new List<RecursoFavorito>();
             }
         }
