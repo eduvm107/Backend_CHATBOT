@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ChatbotTCS.AdminAPI.Controllers
 {
     /// <summary>
-    /// Controlador para gestionar mensajes automáticos
+    /// Controlador para gestionar mensajes automケticos
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
@@ -21,7 +21,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
         }
 
         /// <summary>
-        /// Obtiene todos los mensajes automáticos
+        /// Obtiene todos los mensajes automケticos
         /// </summary>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -35,13 +35,13 @@ namespace ChatbotTCS.AdminAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener mensajes automáticos");
-                return StatusCode(500, new { message = "Error al obtener mensajes automáticos", error = ex.Message });
+                _logger.LogError(ex, "Error al obtener mensajes automケticos");
+                return StatusCode(500, new { message = "Error al obtener mensajes automケticos", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// Obtiene un mensaje automático por ID
+        /// Obtiene un mensaje automケtico por ID
         /// </summary>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -55,21 +55,21 @@ namespace ChatbotTCS.AdminAPI.Controllers
 
                 if (mensaje == null)
                 {
-                    _logger.LogWarning("Mensaje automático no encontrado con ID: {Id}", id);
-                    return NotFound(new { message = $"Mensaje automático con ID {id} no encontrado" });
+                    _logger.LogWarning("Mensaje automケtico no encontrado con ID: {Id}", id);
+                    return NotFound(new { message = $"Mensaje automケtico con ID {id} no encontrado" });
                 }
 
                 return Ok(mensaje);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener mensaje automático con ID: {Id}", id);
-                return StatusCode(500, new { message = "Error al obtener mensaje automático", error = ex.Message });
+                _logger.LogError(ex, "Error al obtener mensaje automケtico con ID: {Id}", id);
+                return StatusCode(500, new { message = "Error al obtener mensaje automケtico", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// Crea un nuevo mensaje automático
+        /// Crea un nuevo mensaje automケtico
         /// </summary>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -81,13 +81,13 @@ namespace ChatbotTCS.AdminAPI.Controllers
             {
                 if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("Modelo inválido al crear mensaje automático");
+                    _logger.LogWarning("Modelo invケlido al crear mensaje automケtico");
                     return BadRequest(ModelState);
                 }
 
                 if (string.IsNullOrWhiteSpace(mensaje.Titulo))
                 {
-                    return BadRequest(new { message = "El título es requerido" });
+                    return BadRequest(new { message = "El tヴtulo es requerido" });
                 }
 
                 if (string.IsNullOrWhiteSpace(mensaje.Contenido))
@@ -97,19 +97,19 @@ namespace ChatbotTCS.AdminAPI.Controllers
 
                 await _mensajeService.CreateAsync(mensaje);
 
-                _logger.LogInformation("Mensaje automático creado con ID: {Id}", mensaje.Id);
+                _logger.LogInformation("Mensaje automケtico creado con ID: {Id}", mensaje.Id);
 
                 return CreatedAtAction(nameof(GetById), new { id = mensaje.Id }, mensaje);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al crear mensaje automático");
-                return StatusCode(500, new { message = "Error al crear mensaje automático", error = ex.Message });
+                _logger.LogError(ex, "Error al crear mensaje automケtico");
+                return StatusCode(500, new { message = "Error al crear mensaje automケtico", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// Actualiza un mensaje automático existente
+        /// Actualiza un mensaje automケtico existente
         /// </summary>
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -122,13 +122,13 @@ namespace ChatbotTCS.AdminAPI.Controllers
             {
                 if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("Modelo inválido al actualizar mensaje automático");
+                    _logger.LogWarning("Modelo invケlido al actualizar mensaje automケtico");
                     return BadRequest(ModelState);
                 }
 
                 if (string.IsNullOrWhiteSpace(mensaje.Titulo))
                 {
-                    return BadRequest(new { message = "El título es requerido" });
+                    return BadRequest(new { message = "El tヴtulo es requerido" });
                 }
 
                 if (string.IsNullOrWhiteSpace(mensaje.Contenido))
@@ -140,22 +140,22 @@ namespace ChatbotTCS.AdminAPI.Controllers
 
                 if (!updated)
                 {
-                    _logger.LogWarning("Mensaje automático no encontrado para actualizar con ID: {Id}", id);
-                    return NotFound(new { message = $"Mensaje automático con ID {id} no encontrado" });
+                    _logger.LogWarning("Mensaje automケtico no encontrado para actualizar con ID: {Id}", id);
+                    return NotFound(new { message = $"Mensaje automケtico con ID {id} no encontrado" });
                 }
 
-                _logger.LogInformation("Mensaje automático actualizado con ID: {Id}", id);
+                _logger.LogInformation("Mensaje automケtico actualizado con ID: {Id}", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al actualizar mensaje automático con ID: {Id}", id);
-                return StatusCode(500, new { message = "Error al actualizar mensaje automático", error = ex.Message });
+                _logger.LogError(ex, "Error al actualizar mensaje automケtico con ID: {Id}", id);
+                return StatusCode(500, new { message = "Error al actualizar mensaje automケtico", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// Elimina un mensaje automático
+        /// Elimina un mensaje automケtico
         /// </summary>
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -169,22 +169,22 @@ namespace ChatbotTCS.AdminAPI.Controllers
 
                 if (!deleted)
                 {
-                    _logger.LogWarning("Mensaje automático no encontrado para eliminar con ID: {Id}", id);
-                    return NotFound(new { message = $"Mensaje automático con ID {id} no encontrado" });
+                    _logger.LogWarning("Mensaje automケtico no encontrado para eliminar con ID: {Id}", id);
+                    return NotFound(new { message = $"Mensaje automケtico con ID {id} no encontrado" });
                 }
 
-                _logger.LogInformation("Mensaje automático eliminado con ID: {Id}", id);
+                _logger.LogInformation("Mensaje automケtico eliminado con ID: {Id}", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar mensaje automático con ID: {Id}", id);
-                return StatusCode(500, new { message = "Error al eliminar mensaje automático", error = ex.Message });
+                _logger.LogError(ex, "Error al eliminar mensaje automケtico con ID: {Id}", id);
+                return StatusCode(500, new { message = "Error al eliminar mensaje automケtico", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// Obtiene mensajes automáticos por tipo
+        /// Obtiene mensajes automケticos por tipo
         /// </summary>
         [HttpGet("tipo/{tipo}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -204,7 +204,47 @@ namespace ChatbotTCS.AdminAPI.Controllers
         }
 
         /// <summary>
-        /// Obtiene mensajes automáticos activos
+        /// Activa o desactiva un mensaje automケtico (solo el campo Activo)
+        /// </summary>
+        [HttpPatch("{id}/activo")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdateActivo(string id, [FromBody] bool activo)
+        {
+            try
+            {
+                var mensaje = await _mensajeService.GetByIdAsync(id);
+
+                if (mensaje == null)
+                {
+                    _logger.LogWarning("Mensaje automケtico no encontrado para actualizar Activo con ID: {Id}", id);
+                    return NotFound(new { message = $"Mensaje automケtico con ID {id} no encontrado" });
+                }
+
+                mensaje.Activo = activo;
+
+                var updated = await _mensajeService.UpdateAsync(id, mensaje);
+
+                if (!updated)
+                {
+                    _logger.LogWarning("No se pudo actualizar el estado Activo para mensaje automケtico con ID: {Id}", id);
+                    return NotFound(new { message = $"Mensaje automケtico con ID {id} no encontrado" });
+                }
+
+                _logger.LogInformation("Estado Activo actualizado para mensaje automケtico con ID: {Id}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar Activo de mensaje automケtico con ID: {Id}", id);
+                return StatusCode(500, new { message = "Error al actualizar Activo", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene mensajes automケticos activos
         /// </summary>
         [HttpGet("activos")]
         [ProducesResponseType(StatusCodes.Status200OK)]
