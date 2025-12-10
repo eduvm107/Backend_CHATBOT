@@ -1,7 +1,10 @@
+using System.Security.Cryptography;
+using System.Text;
 using ChatbotTCS.AdminAPI.Models;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using BCrypt.Net;
 
 namespace ChatbotTCS.AdminAPI.Services
 {
@@ -97,6 +100,7 @@ namespace ChatbotTCS.AdminAPI.Services
             {
                 _logger.LogInformation("Creando nuevo usuario: {Email}", usuario.Email);
 
+                usuario.Contraseña = HashPassword(usuario.Contraseña);
                 usuario.FechaCreacion = DateTime.UtcNow;
                 usuario.FechaActualizacion = DateTime.UtcNow;
                 await _usuariosCollection.InsertOneAsync(usuario);
@@ -123,6 +127,20 @@ namespace ChatbotTCS.AdminAPI.Services
                 {
                     _logger.LogWarning("ID inválido: {Id}", id);
                     return false;
+                }
+
+                if (!string.IsNullOrWhiteSpace(usuario.Contraseña))
+                {
+                    // Verificar si la contraseña ya está en formato hash
+                    if (!usuario.Contraseña.StartsWith("$2a$"))
+                    {
+                        _logger.LogInformation("Generando nuevo hash para la contraseña");
+                        usuario.Contraseña = HashPassword(usuario.Contraseña);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("La contraseña ya está en formato hash, no se generará un nuevo hash");
+                    }
                 }
 
                 usuario.FechaActualizacion = DateTime.UtcNow;
@@ -467,10 +485,19 @@ namespace ChatbotTCS.AdminAPI.Services
             }
         }
 
-       
+        private string HashPassword(string password)
+        {
+            var hash = BCrypt.Net.BCrypt.HashPassword(password);
+            _logger.LogInformation("Hash generado: {Hash}", hash);
+            return hash;
+        }
 
-
-
+        public bool VerifyPassword(string enteredPassword, string storedHash)
+        {
+            var isValid = BCrypt.Net.BCrypt.Verify(enteredPassword, storedHash);
+            _logger.LogInformation("Verificando contraseña: {EnteredPassword}, Hash almacenado: {StoredHash}, Resultado: {IsValid}", enteredPassword, storedHash, isValid);
+            return isValid;
+        }
 
         /// <summary>
         /// Genera una contraseña temporal y la envía al correo del usuario
@@ -490,7 +517,10 @@ namespace ChatbotTCS.AdminAPI.Services
 
                 // Generar contraseña temporal
                 var contrasenaTemporal = Guid.NewGuid().ToString().Substring(0, 8);
-                usuario.Contraseña = contrasenaTemporal; // Aquí puedes encriptar la contraseña si es necesario
+                var hashTemporal = HashPassword(contrasenaTemporal);
+                _logger.LogInformation("Contraseña temporal generada: {ContrasenaTemporal}, Hash: {HashTemporal}", contrasenaTemporal, hashTemporal);
+
+                usuario.Contraseña = hashTemporal;
                 usuario.FechaActualizacion = DateTime.UtcNow;
 
                 await UpdateAsync(usuario.Id!, usuario);
@@ -522,6 +552,35 @@ namespace ChatbotTCS.AdminAPI.Services
                 return false;
             }
         }
-    }
 
+        /// <summary>
+        /// Actualiza todas las contraseñas existentes en la base de datos para usar bcrypt
+        /// </summary>
+        public async Task<bool> UpdateAllPasswordsToBcryptAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Actualizando todas las contraseñas existentes a bcrypt");
+
+                var usuarios = await _usuariosCollection.Find(_ => true).ToListAsync();
+
+                foreach (var usuario in usuarios)
+                {
+                    if (!string.IsNullOrWhiteSpace(usuario.Contraseña))
+                    {
+                        usuario.Contraseña = HashPassword(usuario.Contraseña);
+                        await UpdateAsync(usuario.Id!, usuario);
+                    }
+                }
+
+                _logger.LogInformation("Todas las contraseñas han sido actualizadas a bcrypt");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar contraseñas a bcrypt");
+                return false;
+            }
+        }
+    }
 }
