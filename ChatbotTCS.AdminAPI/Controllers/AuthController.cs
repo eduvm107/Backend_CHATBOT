@@ -61,7 +61,7 @@ namespace ChatbotTCS.AdminAPI.Controllers
                     return Unauthorized(new { message = "Usuario inactivo" });
                 }
 
-                if (usuario.Contraseña != request.Password)
+                if (!_usuarioService.VerifyPassword(request.Password, usuario.Contraseña))
                 {
                     _logger.LogWarning("Contraseña incorrecta para usuario: {Email}", request.Email);
                     return Unauthorized(new { message = "Credenciales invalidas" });
