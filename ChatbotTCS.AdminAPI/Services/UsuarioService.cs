@@ -280,7 +280,6 @@ namespace ChatbotTCS.AdminAPI.Services
         }
 
         /// <summary>
-
         /// Alterna el estado de favorito de un recurso (documento, actividad, chat) para un usuario.
         /// Retorna true si se marcó como favorito, false si se desmarcó.
         /// </summary>
@@ -306,11 +305,13 @@ namespace ChatbotTCS.AdminAPI.Services
                 var pullUpdate = Builders<Usuario>.Update.Pull(arrayToModify, recursoId);
                 var pullResult = await _usuariosCollection.UpdateOneAsync(filter, pullUpdate);
 
+                bool isFavorito;
+                
                 if (pullResult.ModifiedCount > 0)
                 {
                     // Se removió el favorito
                     _logger.LogInformation("Recurso {RecursoId} desmarcado como favorito", recursoId);
-                    return false;
+                    isFavorito = false;
                 }
                 else
                 {
@@ -321,7 +322,7 @@ namespace ChatbotTCS.AdminAPI.Services
                     if (pushResult.ModifiedCount > 0)
                     {
                         _logger.LogInformation("Recurso {RecursoId} marcado como favorito", recursoId);
-                        return true;
+                        isFavorito = true;
                     }
                     else
                     {
@@ -329,6 +330,15 @@ namespace ChatbotTCS.AdminAPI.Services
                         return false;
                     }
                 }
+
+                // 4. SINCRONIZAR: Si es un chat, actualizar también el campo favorito en la conversación
+                if (tipoRecurso.ToLowerInvariant() == "chat")
+                {
+                    await _conversacionService.UpdateFavoritoAsync(recursoId, isFavorito);
+                    _logger.LogInformation("Campo favorito de conversación {RecursoId} sincronizado a {IsFavorito}", recursoId, isFavorito);
+                }
+
+                return isFavorito;
             }
             catch (Exception ex)
             {
@@ -359,7 +369,7 @@ namespace ChatbotTCS.AdminAPI.Services
                 // 1. Extraer IDs de los tres arrays
                 var docIds = usuario.favoritosDocumentos ?? new List<string>();
                 var actIds = usuario.favoritosActividades ?? new List<string>();
-                var chatIds = usuario.FavoritosChat ?? new List<string>();
+                var chatIds = usuario.favoritosChat ?? new List<string>();
 
                 // 2. Consultar y mapear Documentos Favoritos
                 if (docIds.Any())

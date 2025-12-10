@@ -197,7 +197,8 @@ namespace ChatbotTCS.AdminAPI.Models
         /// Lista de favoritos del chat
         /// </summary>
         [BsonElement("favoritosChat")]
-        public List<string> FavoritosChat { get; set; } = new List<string>();
+        [BsonIgnoreIfNull]
+        public List<string>? favoritosChat { get; set; } = new List<string>();
 
         /// <summary>
         /// Lista de IDs de documentos marcados como favoritos
