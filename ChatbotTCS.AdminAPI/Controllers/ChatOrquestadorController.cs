@@ -33,7 +33,10 @@ namespace ChatbotTCS.AdminAPI.Controllers
         }
 
         [HttpGet("preguntar")]
-        public async Task<IActionResult> Preguntar([FromQuery] string pregunta, [FromQuery] string usuarioId)
+        public async Task<IActionResult> Preguntar(
+            [FromQuery] string pregunta,
+            [FromQuery] string usuarioId,
+            [FromQuery] string? conversacionId = null)  // ✅ NUEVO: Parámetro opcional
         {
             if (string.IsNullOrEmpty(usuarioId))
                 return BadRequest("Error: Necesito tu ID de usuario.");
@@ -44,16 +47,44 @@ namespace ChatbotTCS.AdminAPI.Controllers
             if (usuario == null) return NotFound("Usuario no encontrado.");
             string nombre = usuario.Nombre;
 
-           
+            // 2. GESTIÓN DE HISTORIAL (INICIO)
+            Conversacion conversacion;
 
-            var conversacion = await _conversacionService.ObtenerConversacionActivaAsync(usuarioId);
+            // ✅ NUEVO: Si viene conversacionId, usar esa conversación
+            if (!string.IsNullOrEmpty(conversacionId))
+            {
+                conversacion = await _conversacionService.GetByIdAsync(conversacionId);
+                if (conversacion == null)
+                {
+                    return NotFound($"Conversación con ID {conversacionId} no encontrada.");
+                }
+            }
+            // ✅ NUEVO: Si NO viene conversacionId, crear una NUEVA conversación
+            else
+            {
+                conversacion = new Conversacion
+                {
+                    UsuarioId = usuarioId,
+                    Activa = true,
+                    FechaInicio = DateTime.UtcNow,
+                    FechaUltimaMensaje = DateTime.UtcNow,
+                    Mensajes = new List<Mensaje>()
+                };
+                await _conversacionService.CreateAsync(conversacion);
+            }
 
             
             var msjUsuario = new Mensaje { Tipo = "usuario", Contenido = pregunta, Timestamp = DateTime.UtcNow };
             await _conversacionService.AddMensajeAsync(conversacion.Id!, msjUsuario);
 
-            // historial 
-            string historialChat = await _conversacionService.ObtenerHistorialTextoAsync(usuarioId);
+            // C. Obtener historial reciente para contexto (de esta conversación específica)
+            string historialChat = "";
+            if (conversacion.Mensajes != null && conversacion.Mensajes.Count > 0)
+            {
+                var recientes = conversacion.Mensajes.TakeLast(2);
+                historialChat = string.Join("\n", recientes.Select(m =>
+                    $"{(m.Tipo == "usuario" ? "Usuario" : "Asistente")}: {m.Contenido}"));
+            }
 
             // 3. CLASIFICAR INTENCIÓN
             var intencion = await _ollamaService.ClasificarIntencionAsync(pregunta);
@@ -164,7 +195,8 @@ namespace ChatbotTCS.AdminAPI.Controllers
             {
                 respuesta = respuestaFinal,
                 intencion = intencion,
-                fuentes = (intencion == "CONSULTA" && contextoDatos != "NO_INFO") ? "Documentos RAG" : "Base de Datos"
+                fuentes = (intencion == "CONSULTA" && contextoDatos != "NO_INFO") ? "Documentos RAG" : "Base de Datos",
+                conversacionId = conversacion.Id  // ✅ AGREGADO: Devolver el ID de la conversación
             });
         }
     }
