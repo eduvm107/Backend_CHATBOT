@@ -38,31 +38,31 @@ namespace ChatbotTCS.AdminAPI.Controllers
             if (string.IsNullOrEmpty(usuarioId))
                 return BadRequest("Error: Necesito tu ID de usuario.");
 
-            // 1. OBTENER USUARIO
+            //  USUARIO
             var usuario = await _usuarioService.GetUsuarioParaChatAsync(usuarioId);
-            
+
             if (usuario == null) return NotFound("Usuario no encontrado.");
             string nombre = usuario.Nombre;
 
-            // 2. GESTIÓN DE HISTORIAL (INICIO)
+           
 
             var conversacion = await _conversacionService.ObtenerConversacionActivaAsync(usuarioId);
 
-            // B. Guardar pregunta del usuario
+            
             var msjUsuario = new Mensaje { Tipo = "usuario", Contenido = pregunta, Timestamp = DateTime.UtcNow };
             await _conversacionService.AddMensajeAsync(conversacion.Id!, msjUsuario);
 
-            // C. Obtener historial reciente para contexto
+            // historial 
             string historialChat = await _conversacionService.ObtenerHistorialTextoAsync(usuarioId);
 
             // 3. CLASIFICAR INTENCIÓN
             var intencion = await _ollamaService.ClasificarIntencionAsync(pregunta);
 
-            // 4. PREPARAR RESPUESTA
+           
             string respuestaFinal = "";
             string promptSistema = "";
 
-            // Variables auxiliares
+          
             string contextoDatos = "";
 
             switch (intencion)
@@ -121,24 +121,35 @@ namespace ChatbotTCS.AdminAPI.Controllers
                         contextoDatos = "NO_INFO";
 
                     promptSistema = $@"
-                        Eres TCS Assistant hablando con {nombre} hablale POR SU NOMBRE.
-                        HISTORIAL: {historialChat}
-                        CONTEXTO OFICIAL: {contextoDatos}
+                        Eres TCS Assistant, un experto en onboarding corporativo hablando con {nombre}.
                         
-                        INSTRUCCIONES:
-                        1. Si el contexto es 'NO_INFO', disc£lpate y di que no sabes NO DES RECOMENDACIONES.
-                        2. Responde usando SOLO el contexto oficial.
-                        3. NO inventes nada y ni trates de responder.
-                        4. Usa el historial para entender el hilo de la conversacion.
-                        5.maximo 60 palabras ";
+                        CONTEXTO RAG OFICIAL:
+                        {contextoDatos}
+                        
+                        REGLAS DE COMPORTAMIENTO (STRICT MODE):
+                        1. FILTRO DE TEMA: Tu dominio es EXCLUSIVAMENTE laboral (TCS, Onboarding, Beneficios, Agenda).
+                        2. SI EL USUARIO HABLA DE OTRA COSA (Música, Deportes):
+                           - IGNORA el comentario personal.
+                           - Responde: 'Entiendo {nombre}, pero como asistente virtual debo centrarme en tu proceso en TCS.'
+                           - CIERRA; con una pregunta relacionada sobre beneficios o agenda.
+                        
+                        3. MANEJO DE 'NO_INFO':
+                           - Si el contexto es 'NO_INFO' y la pregunta PARECE laboral, dile que no tines acceso a esa informacion y podria cosulta con su asesor.
+                        
+                        4. REGLA DE CIERRE (OBLIGATORIA):
+                           - Termina SIEMPRE con una pregunta.
+                           - La pregunta DEBE ser sobre TCS o TRABAJO.
+                           - JAMÁS hagas preguntas sobre gustos personales, música o hobbies.
+                        
+                        5. Máximo 60 palabras.";
                     break;
             }
 
-            // 5. GENERAR RESPUESTA (
+            // 5.RESPUESTA 
 
             respuestaFinal = await _ollamaService.ChatAsync(promptSistema, pregunta);
 
-            // 6. GUARDAR RESPUESTA DEL BOT
+            // 6. GUARDAR 
             var msjBot = new Mensaje
             {
                 Tipo = "bot",
